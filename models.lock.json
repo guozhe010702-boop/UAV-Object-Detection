@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "selected": {
+    "id": "visdrone-yolo11n",
+    "repository": "https://github.com/dronefreak/VisDrone-dataset-python-toolkit",
+    "modelRepository": "https://huggingface.co/dronefreak/visdrone-yolo11n",
+    "url": "https://huggingface.co/dronefreak/visdrone-yolo11n/resolve/c453ee5/best.pt",
+    "sha256": "97d78d933f46d693f68817fca253c728444aafcec92be42c86ad703ed67d40d5",
+    "license": "AGPL-3.0; see model card and VisDrone dataset terms",
+    "trainingImageSize": 1280,
+    "exportImageSize": 640,
+    "notes": "Model card lists 11 labels; others has zero reported AP. Actual labels must be extracted from the checkpoint. 1280 training metrics do not establish 640 RKNN accuracy."
+  },
+  "exporter": {
+    "repository": "https://github.com/airockchip/ultralytics_yolo11",
+    "commit": "0692e9297670acf4cc6d0cec773d7a9493cb8a5f",
+    "rknnToolkit2": "2.3.2",
+    "platform": "rk3588",
+    "outputLayout": "rockchip-yolo11-dfl-9"
+  }
+}
