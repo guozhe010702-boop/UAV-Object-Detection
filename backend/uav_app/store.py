@@ -40,6 +40,7 @@ class Store:
                     source TEXT NOT NULL, counts TEXT NOT NULL, objects INTEGER NOT NULL, inference_ms REAL,
                     snapshot TEXT);
                 CREATE INDEX IF NOT EXISTS records_time ON records(at DESC);
+                CREATE TABLE IF NOT EXISTS model_validation(id TEXT PRIMARY KEY, at REAL NOT NULL, details TEXT NOT NULL);
             ''')
             db.execute('INSERT OR IGNORE INTO settings VALUES(1,?)', (Settings().model_dump_json(),))
 
@@ -78,8 +79,36 @@ class Store:
     def model(self, identifier):
         with self.connect() as db:
             row = db.execute('SELECT * FROM models WHERE id=?', (identifier,)).fetchone()
+            validation = db.execute('SELECT at,details FROM model_validation WHERE id=?', (identifier,)).fetchone()
         return dict(id=row['id'], manifest=json.loads(row['manifest']), created=row['created'],
-                    status='imported_not_npu_validated') if row else None
+                    status='npu_execution_verified' if validation else 'imported_not_npu_validated',
+                    validation={'at': validation['at'], 'details': json.loads(validation['details'])} if validation else None) if row else None
+
+    def mark_model_validated(self, identifier, details):
+        with self.connect() as db:
+            db.execute('INSERT OR REPLACE INTO model_validation VALUES(?,?,?)',
+                       (identifier, time.time(), json.dumps(details)))
+
+    def add_detection(self, row, jpeg):
+        """Reserve space, persist one genuine sampled frame, retain at most 10k records."""
+        identifier = uuid.uuid4().hex
+        target = safe_file(self.root / 'snapshots', identifier + '.jpg')
+        with self.upload_lock:
+            if shutil.disk_usage(self.root).free < 1024**3 + len(jpeg):
+                raise ValueError('存储不足 1 GiB，已暂停保存记录；实时检测继续')
+            try:
+                target.write_bytes(jpeg)
+                with self.connect() as db:
+                    db.execute('INSERT INTO records VALUES(?,?,?,?,?,?,?,?)', (identifier, row['at'], row['model_id'],
+                        row['source'], json.dumps(row['counts'], ensure_ascii=False), row['objects'], row['inference_ms'], target.name))
+                    old = db.execute('SELECT id,snapshot FROM records ORDER BY at DESC LIMIT -1 OFFSET 10000').fetchall()
+                    db.executemany('DELETE FROM records WHERE id=?', [(r['id'],) for r in old])
+                for entry in old:
+                    if entry['snapshot']:
+                        safe_file(self.root / 'snapshots', entry['snapshot']).unlink(missing_ok=True)
+            except BaseException:
+                target.unlink(missing_ok=True)
+                raise
 
     def models(self):
         with self.connect() as db:

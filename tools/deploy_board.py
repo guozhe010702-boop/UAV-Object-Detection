@@ -4,6 +4,8 @@ import hashlib
 import json
 from pathlib import Path
 import subprocess
+import tempfile
+import uuid
 
 from board_probe import ROOT, ADB
 
@@ -11,11 +13,27 @@ DEST = '/userdata/uav-object-detection'
 
 
 def remote(code, timeout=60):
-    command = "python3 -c 'import base64;exec(base64.b64decode(\"" + base64.b64encode(code.encode()).decode() + "\"))'"
-    text = subprocess.check_output([str(ADB), 'shell', command], timeout=timeout).decode().replace('\r', '')
-    if 'Traceback (most recent call last):' in text:
+    # Old ADB can return exit 0 for a failed remote command. Use an explicit
+    # completion marker rather than treating a printed historical traceback as failure.
+    envelope = "import traceback,sys\ntry:\n exec(" + repr(code) + ")\nexcept BaseException:\n traceback.print_exc(file=sys.stdout)\n print('__UAV_REMOTE_ERROR__')\nelse:\n print('__UAV_REMOTE_OK__')\n"
+    command = "python3 -c 'import base64;exec(base64.b64decode(\"" + base64.b64encode(envelope.encode()).decode() + "\"))'"
+    stage = None
+    if len(command) > 3500:
+        stage = '/tmp/uav-command-' + uuid.uuid4().hex + '.py'
+        with tempfile.TemporaryDirectory(prefix='uav-adb-') as directory:
+            local = Path(directory) / 'command.py'
+            local.write_text(envelope, encoding='utf-8')
+            subprocess.run([str(ADB), 'push', str(local), stage], check=True, stdout=subprocess.DEVNULL)
+        command = 'python3 ' + stage
+    try:
+        text = subprocess.check_output([str(ADB), 'shell', command], timeout=timeout).decode().replace('\r', '')
+    finally:
+        if stage:
+            cleanup = "python3 -c 'from pathlib import Path;Path(\"" + stage + "\").unlink(missing_ok=True)'"
+            subprocess.run([str(ADB), 'shell', cleanup], stdout=subprocess.DEVNULL, timeout=10)
+    if not text.rstrip().endswith('__UAV_REMOTE_OK__'):
         raise RuntimeError(text[-4000:])
-    return text
+    return text.rsplit('__UAV_REMOTE_OK__', 1)[0]
 
 
 def main():

@@ -50,7 +50,11 @@ class Settings(BaseModel):
     active_model: Optional[str] = None
     record_interval: int = Field(default=1, ge=1, le=3600)
     preview_width: int = Field(default=1280, ge=320, le=1920)
-    autostart_inference: Literal[False] = False
+    autostart_inference: bool = False
+    camera_width: int = Field(default=1920, ge=320, le=3840)
+    camera_height: int = Field(default=1080, ge=240, le=2160)
+    camera_fps: int = Field(default=30, ge=1, le=60)
+    camera_format: Literal['nv12', 'yuyv422', 'mjpeg'] = 'nv12'
 
     @field_validator('active_model')
     @classmethod
@@ -64,6 +68,8 @@ class Settings(BaseModel):
     @model_validator(mode='after')
     def source(self):
         import re
+        if self.camera_width % 2 or self.camera_height % 2:
+            raise ValueError('相机宽高必须为偶数')
         if not self.source_uri:
             return self
         if self.source_kind == 'rtsp':

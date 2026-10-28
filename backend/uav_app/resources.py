@@ -1,5 +1,7 @@
 """Real host resources; unavailable NPU/FPS values remain null."""
 from pathlib import Path
+import json
+import time
 import platform
 import re
 import shutil
@@ -20,6 +22,13 @@ def resources(root, cpu_percent=None):
             npu = [values[i] for i in range(3)]
     except OSError:
         pass
+    if npu is None:
+        try:
+            cached = json.loads(Path('/run/uav-object-detection/npu.json').read_text())
+            if 0 <= time.time() - cached['at'] < 4:
+                npu = cached['percent']
+        except (OSError, ValueError, KeyError):
+            pass
     temperatures = []
     for path in Path('/sys/class/thermal').glob('thermal_zone*/temp'):
         try:

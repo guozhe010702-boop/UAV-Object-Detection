@@ -1,4 +1,5 @@
-"""Stage 03 application. No implicit model execution or camera acquisition."""
+"""Authenticated local application and supervised real NPU inference."""
+from contextlib import asynccontextmanager
 import csv
 import hashlib
 import hmac
@@ -10,7 +11,7 @@ import secrets
 import time
 
 from fastapi import FastAPI, File, HTTPException, Query, Request, UploadFile
-from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
+from fastapi.responses import FileResponse, JSONResponse, StreamingResponse, Response
 from fastapi.staticfiles import StaticFiles
 from starlette.concurrency import run_in_threadpool
 
@@ -18,6 +19,7 @@ from . import __version__
 from .resources import ResourceSampler
 from .schema import ModelManifest, Settings
 from .store import Store, safe_file
+from .engine import Engine
 
 PROJECT = Path(__file__).resolve().parents[2]
 
@@ -35,8 +37,23 @@ def create_app(data_dir=None, web_dir=None):
             output.write(secrets.token_urlsafe(24) + '\n')
         token_file.chmod(0o600)
     secret = token_file.read_text().strip()
-    app = FastAPI(title='UAV 本地检测工作台', version=__version__, docs_url=None, redoc_url=None, openapi_url=None)
+    engine = Engine(store)
+
+    @asynccontextmanager
+    async def lifespan(app):
+        if store.settings().autostart_inference:
+            try:
+                await run_in_threadpool(engine.start)
+            except Exception as error:
+                engine.last_state = {'state': 'error', 'error': str(error)}
+        try:
+            yield
+        finally:
+            await run_in_threadpool(engine.stop)
+
+    app = FastAPI(title='UAV 本地检测工作台', version=__version__, docs_url=None, redoc_url=None, openapi_url=None, lifespan=lifespan)
     app.state.store = store
+    app.state.engine = engine
     sampler = ResourceSampler()
 
     def authenticated(request):
@@ -84,7 +101,7 @@ def create_app(data_dir=None, web_dir=None):
 
     @app.get('/api/health')
     def health():
-        return {'ok': True, 'version': __version__, 'inference_connected': False}
+        return {'ok': True, 'version': __version__, 'inference_connected': engine.status()['inference_connected']}
 
     @app.get('/api/session')
     def session(request: Request):
@@ -115,14 +132,31 @@ def create_app(data_dir=None, web_dir=None):
     @app.get('/api/status')
     def status():
         settings = store.settings()
-        return {'phase': 'application_ready_inference_pending', 'phase_label': '网页已就绪 · NPU 实时检测待接入',
-                'inference_connected': False, 'processing_fps': None, 'inference_ms': None,
-                'current_counts': None, 'model': store.model(settings.active_model) if settings.active_model else None,
-                'resources': sampler.sample(store.root), 'updated_at': time.time(), 'version': __version__}
+        value = engine.status()
+        names = {'idle': '等待启动检测', 'starting': '正在加载模型与视频源', 'running': 'NPU 实时检测中',
+                 'completed': '素材检测完成', 'stopped': '检测已停止', 'error': '检测发生错误'}
+        return dict(value, phase=value['state'], phase_label=names.get(value['state'], value['state']),
+                    model=store.model(settings.active_model) if settings.active_model else None,
+                    resources=sampler.sample(store.root), updated_at=time.time(), version=__version__)
 
     @app.post('/api/inference/start')
-    def not_connected():
-        raise HTTPException(409, '按本轮范围，尚未接入第 02 步 NPU 实时推理；不会启动摄像头或切换成 CPU 检测')
+    def start_inference():
+        return engine.start()
+
+    @app.post('/api/inference/stop')
+    def stop_inference():
+        return engine.stop()
+
+    @app.get('/api/inference/frame')
+    def current_frame():
+        jpeg = engine.frame()
+        if jpeg is None:
+            return Response(status_code=204)
+        return Response(jpeg, media_type='image/jpeg')
+
+    @app.get('/api/inference/logs')
+    def inference_logs():
+        return engine.logs()
 
     @app.get('/api/settings')
     def settings():
@@ -130,6 +164,8 @@ def create_app(data_dir=None, web_dir=None):
 
     @app.put('/api/settings')
     def update_settings(value: Settings):
+        if engine.status()['worker_pid']:
+            raise HTTPException(409, '请先停止检测，再保存模型或视频源参数；避免运行参数与页面不一致')
         return store.save_settings(value)
 
     @app.get('/api/assets')
@@ -179,24 +215,25 @@ def create_app(data_dir=None, web_dir=None):
 
     @app.get('/api/records.csv')
     def export_records(search: str = Query('', max_length=100)):
+        # Capture a bounded record snapshot before streaming. Starlette may resume
+        # a sync iterator on a different worker thread after every yielded chunk;
+        # a live SQLite connection/cursor must never cross those yields.
+        with store.connect() as db:
+            query = '%' + search + '%'
+            rows = db.execute('SELECT * FROM records WHERE source LIKE ? OR counts LIKE ? ORDER BY at DESC',
+                              (query, query)).fetchall()
+
         def generate():
             output = io.StringIO()
             writer = csv.writer(output)
             writer.writerow(['UTC时间戳', '视频源', '画面目标数', '各类数量', '推理毫秒'])
             yield '\ufeff' + output.getvalue()
-            with store.connect() as db:
-                query = '%' + search + '%'
-                cursor = db.execute('SELECT * FROM records WHERE source LIKE ? OR counts LIKE ? ORDER BY at DESC', (query, query))
-                while True:
-                    rows = cursor.fetchmany(100)
-                    if not rows:
-                        break
-                    for row in rows:
-                        output.seek(0)
-                        output.truncate(0)
-                        writer.writerow([row['at'], csv_cell(row['source']), row['objects'],
-                                         csv_cell(row['counts']), row['inference_ms']])
-                        yield output.getvalue()
+            for row in rows:
+                output.seek(0)
+                output.truncate(0)
+                writer.writerow([row['at'], csv_cell(row['source']), row['objects'],
+                                 csv_cell(row['counts']), row['inference_ms']])
+                yield output.getvalue()
         return StreamingResponse(generate(), media_type='text/csv; charset=utf-8',
                                  headers={'Content-Disposition': 'attachment; filename="uav-records.csv"'})
 

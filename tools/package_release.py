@@ -24,15 +24,21 @@ def main():
     for folder in ('backend', 'conversion', 'frontend/src', 'systemd', 'tools', 'tests'):
         source_files += [(p, p.relative_to(ROOT).as_posix()) for p in (ROOT / folder).rglob('*')
                          if p.is_file() and '__pycache__' not in p.parts]
-    for name in ('README.md', 'todo.md', 'VALIDATION.md', 'THIRD_PARTY.md', 'models.lock.json', '.gitignore', '.gitattributes',
+    for name in ('README.md', 'todo.md', 'VALIDATION.md', 'THIRD_PARTY.md', 'models.lock.json', 'runtime.lock.json', '.gitignore', '.gitattributes',
                  'frontend/package.json', 'frontend/package-lock.json', 'frontend/vite.config.js',
-                 'frontend/index.html', 'frontend/verify-ui.mjs', 'run_windows.ps1'):
+                 'frontend/index.html', 'frontend/verify-ui.mjs', 'frontend/verify-live.mjs', 'run_windows.ps1'):
         source_files.append((ROOT / name, name))
     artifacts = ROOT / 'artifacts/visdrone-yolo11n-fp16-640'
     bundle = [(p, p.name) for p in artifacts.iterdir() if p.is_file()]
     board_files = [(p, name) for p, name in source_files if name.startswith(('backend/', 'systemd/'))
-                   or name in ('README.md', 'VALIDATION.md', 'THIRD_PARTY.md', 'models.lock.json')]
-    board_files += [(ROOT / 'tools/bootstrap_venv.py', 'tools/bootstrap_venv.py')]
+                   or name in ('README.md', 'VALIDATION.md', 'THIRD_PARTY.md', 'models.lock.json', 'runtime.lock.json')]
+    board_files += [(ROOT / ('tools/' + name), 'tools/' + name)
+                    for name in ('bootstrap_venv.py', 'validate_npu.py', 'prepare_runtime.py')]
+    runtime = ROOT / 'runtime/lib/librknnrt.so'
+    lock = json.loads((ROOT / 'runtime.lock.json').read_text(encoding='utf-8'))
+    if not runtime.is_file() or hashlib.sha256(runtime.read_bytes()).hexdigest() != lock['files'][0]['sha256']:
+        raise SystemExit('Prepare the pinned private runtime first')
+    board_files += [(runtime, 'runtime/lib/librknnrt.so')]
     board_files += [(p, 'frontend/dist/' + p.relative_to(ROOT / 'frontend/dist').as_posix())
                     for p in (ROOT / 'frontend/dist').rglob('*') if p.is_file()]
     board_files += [(p, 'wheels/' + p.name) for p in (ROOT / '.cache/board-wheels').glob('*.whl')]

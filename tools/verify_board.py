@@ -24,9 +24,10 @@ def get(path):
  request=urllib.request.Request('http://127.0.0.1:8088/api/'+path,headers={'Authorization':'Bearer '+token})
  return json.load(urllib.request.urlopen(request,timeout=10))
 status=get('status');models=get('models');records=get('records');statistics=get('statistics')
-assert status['inference_connected'] is False and status['processing_fps'] is None
 assert models and len(models[0]['manifest']['classes'])==11
-assert records['total']==0 and statistics['samples']==0
+assert records['total']==statistics['samples']
+if status['state']=='running':
+ assert status['npu']['core_mask']==7 and status['inference_connected']
 owners=[]
 for p in Path('/proc').glob('[0-9]*'):
  try:
@@ -34,7 +35,9 @@ for p in Path('/proc').glob('[0-9]*'):
  except OSError:pass
 unit=subprocess.check_output(['systemctl','show','uav-object-detection.service','--property=User,ActiveState,UnitFileState'],text=True)
 report={'health':health,'statusPhase':status['phase'],'modelCount':len(models),'classes':len(models[0]['manifest']['classes']),
- 'records':records['total'],'serviceProperties':unit,'cameraOwners':owners,'npuInferencePerformed':False,
+ 'records':records['total'],'serviceProperties':unit,'cameraOwners':owners,
+ 'npuInferencePerformed':any(m['status']=='npu_execution_verified' for m in models),
+ 'processingFps':status['processing_fps'],'npuPercent':status['resources']['npu_percent'],
  'appSha256':EXPECTED,'cpu':status['resources']['cpu_percent'],'memoryPercent':status['resources']['memory_percent']}
 print(json.dumps(report))
 """.replace('EXPECTED', repr(expected))

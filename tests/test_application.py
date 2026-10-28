@@ -50,7 +50,7 @@ def test_access_and_explicit_inference_boundary(setup):
     client, _ = login(setup)
     status = client.get('/api/status').json()
     assert status['processing_fps'] is None and status['current_counts'] is None
-    assert client.post('/api/inference/start').status_code == 409
+    assert client.post('/api/inference/start').status_code == 400
 
 
 def test_login_logout_and_cross_site_control(setup):
