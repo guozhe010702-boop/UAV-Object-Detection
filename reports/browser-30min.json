@@ -1,0 +1,13 @@
+{
+  "seconds": 1800,
+  "elapsedSeconds": 1800.0002986,
+  "samples": 1800,
+  "meanProcessingFps": 32.91421602271073,
+  "meanPreviewUniqueFrameFps": 29.375463406462256,
+  "meanPreviewMbps": 26.66909948641789,
+  "firstHeap": 4446784,
+  "lastHeap": 3798016,
+  "errors": [],
+  "passed": true,
+  "scope": "Headless real Chromium image-load updates from distinct server frame IDs, not measured physical-display paint or camera-to-screen latency"
+}

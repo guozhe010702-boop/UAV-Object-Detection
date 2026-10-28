@@ -17,5 +17,30 @@
     "rknnToolkit2": "2.3.2",
     "platform": "rk3588",
     "outputLayout": "rockchip-yolo11-dfl-9"
+  },
+  "deployment": {
+    "defaultPrecision": "int8",
+    "inputSize": [
+      640,
+      640
+    ],
+    "rknnSha256": "79a3047684f14c55c3b5c875a7701f71b12aaccc3187ed3cd1d277492f35df3a",
+    "calibration": {
+      "dataset": "Voxel51/VisDrone2019-DET",
+      "revision": "3c3b9e9bd44c91121c1fc19fce428f0e6b71bba2",
+      "split": "train",
+      "images": 64,
+      "seed": 3588,
+      "oneImagePerScene": true
+    },
+    "validation": {
+      "split": "val",
+      "images": 548,
+      "scoredClasses": 10,
+      "disjointFromCalibration": true,
+      "metrics": "reports/visdrone-int8-metrics.json"
+    },
+    "fp16FallbackSha256": "d6ebc76ac8715310375fe77f598a9a74f6d3ba8980257711551d39299de499f9",
+    "notes": "INT8 accepted after complete val comparison. Others remains unverified. Raw data and weights are not uploaded."
   }
 }

@@ -72,6 +72,10 @@ if [[ "${1:-}" != --upgrade && -f "$root/model-bundle/manifest.json" ]]; then
     runuser -u uav-web -- env "PYTHONPATH=$root/backend" "UAV_DATA_DIR=$root/data" \
         "$root/.venv/bin/python" -m uav_app.cli import-model --bundle "$root/model-bundle"
 fi
+if [[ "${1:-}" != --upgrade && -f "$root/model-fallback/manifest.json" ]]; then
+    runuser -u uav-web -- env "PYTHONPATH=$root/backend" "UAV_DATA_DIR=$root/data" \
+        "$root/.venv/bin/python" -m uav_app.cli import-model --bundle "$root/model-fallback"
+fi
 systemctl enable --now uav-object-detection.service
 systemctl enable --now uav-npu-metrics.service
 echo 'Web service enabled. Detection runs only on an explicit request or saved autostart setting.'

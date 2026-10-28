@@ -15,6 +15,8 @@ from .inference_io import Capture, annotation, atomic_json, actual_camera_format
 from .postprocess import decode, letterbox
 from .rknn_backend import RKNN
 from .store import Store
+from .source_auth import read_credentials, public_source
+from .preprocess import Preprocessor
 
 
 def run(config):
@@ -25,7 +27,7 @@ def run(config):
     signal.signal(signal.SIGTERM, lambda *_: stop.set())
     signal.signal(signal.SIGINT, lambda *_: stop.set())
     state = {'state': 'starting', 'frame_id': None, 'processing_fps': None, 'current_counts': None,
-             'inference_ms': None, 'frames_processed': 0, 'source': config['source'], 'error': None,
+             'inference_ms': None, 'frames_processed': 0, 'source': public_source(config['source']), 'error': None,
              'run_id': folder.name, 'updated_at': time.time()}
 
     def publish():
@@ -33,7 +35,7 @@ def run(config):
         atomic_json(folder / 'status.json', state)
 
     publish()
-    model = capture = None
+    model = capture = preprocessor = None
     record_queue = queue.Queue(maxsize=1)
     record_stop = threading.Event()
     record_error = [None]
@@ -59,19 +61,21 @@ def run(config):
         state['npu'] = model.info
         # Mark execution only after a real successful run, not merely after loading.
         with (folder / 'capture.log').open('ab', buffering=0) as log:
-            capture = Capture(config['source'], settings['preview_width'], log)
+            capture = Capture(config['source'], settings['preview_width'], log,
+                              read_credentials(store.root, config['source']['name']))
+            preprocessor = Preprocessor(capture.frames)
             state['preview_size'] = list(capture.size)
             count, baseline, previous, last_record = 0, time.monotonic(), 0, -float('inf')
             previous_received = 0
             infer_samples, age_samples = deque(maxlen=120), deque(maxlen=120)
             while not stop.is_set():
-                frame = capture.frames.take(timeout=12)
+                frame = preprocessor.frames.take(timeout=12)
                 if frame is None:
                     state['state'] = 'completed'; break
-                frame_id, acquired, image = frame
+                _, _, prepared = frame
+                frame_id, acquired, image, rgb, transform, preprocess_ms = prepared
                 if count == 0 and config['source']['kind'] in ('imx415', 'usb'):
                     state['source']['actual_mode'] = actual_camera_format(config['source']['name'])
-                rgb, transform = letterbox(image)
                 before = time.monotonic()
                 outputs = model.infer(rgb)
                 infer_ms = (time.monotonic() - before) * 1000
@@ -79,7 +83,9 @@ def run(config):
                 detections = decode(outputs, manifest['classes'], transform, image.size, settings['confidence'], settings['iou'])
                 post_ms = (time.monotonic() - post) * 1000
                 labels = manifest.get('labels_zh') or manifest['classes']
+                annotation_start = time.monotonic()
                 jpeg = annotation(image, detections, labels, manifest['classes'])
+                annotation_ms = (time.monotonic() - annotation_start) * 1000
                 now = time.monotonic()
                 count += 1; infer_samples.append(infer_ms); age_samples.append((now - acquired) * 1000)
                 if now - baseline >= 1:
@@ -95,14 +101,20 @@ def run(config):
                             diagnostic.seek(0); diagnostic.write(tail); diagnostic.truncate()
                 counts = dict(Counter(labels[x['class_id']] for x in detections))
                 state.update(state='running', frame_id=frame_id, frames_processed=count,
-                    frames_received=capture.frames.received, frames_dropped=capture.frames.dropped,
+                    frames_received=capture.frames.received,
+                    frames_dropped=capture.frames.dropped + preprocessor.frames.dropped,
+                    capture_queue_drops=capture.frames.dropped, preprocess_queue_drops=preprocessor.frames.dropped,
                     current_counts=counts, objects=len(detections), detections=detections,
                     inference_ms=infer_ms, postprocess_ms=post_ms, preview_updated_at=time.time(),
+                    preprocess_ms=preprocess_ms, annotation_ms=annotation_ms,
                     inference_p50_ms=float(np.percentile(infer_samples, 50)), inference_p95_ms=float(np.percentile(infer_samples, 95)),
                     frame_age_p95_ms=float(np.percentile(age_samples, 95)), record_error=record_error[0])
                 # JPEG and its boxes form one immutable blob. No later frame can reuse old boxes.
                 temporary = folder / 'frame.tmp'
-                temporary.write_bytes(jpeg); temporary.replace(folder / 'frame.jpg')
+                # Publish identity and JPEG together, so a browser never counts
+                # the same image twice or associates new pixels with an old ID.
+                temporary.write_bytes(frame_id.to_bytes(8, 'big') + jpeg)
+                temporary.replace(folder / 'frame.bin')
                 publish()
                 if count == 1:
                     store.mark_model_validated(config['model_id'], model.info)
@@ -125,6 +137,8 @@ def run(config):
     finally:
         if capture:
             capture.close()
+        if preprocessor:
+            preprocessor.close()
         if model:
             model.close()
         record_stop.set(); recorder.join(timeout=5)

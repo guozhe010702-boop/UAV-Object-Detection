@@ -222,3 +222,17 @@ def test_csv_stream_does_not_hold_a_database_connection_across_yields(tmp_path, 
         return ''.join(chunks)
     text = asyncio.run(consume())
     assert text.count('CSV TEST FIXTURE') == 501
+
+
+def test_frame_identity_and_jpeg_are_published_as_one_packet(tmp_path):
+    from fastapi.testclient import TestClient
+    from uav_app.app import create_app
+    app = create_app(tmp_path / 'data');client = TestClient(app)
+    client.headers['Authorization'] = 'Bearer ' + (tmp_path / 'data/admin-token.txt').read_text().strip()
+    app.state.engine.folder = tmp_path / 'run';app.state.engine.folder.mkdir()
+    output = io.BytesIO();Image.new('RGB', (10, 10)).save(output, 'JPEG');jpeg = output.getvalue()
+    (app.state.engine.folder / 'frame.bin').write_bytes((987).to_bytes(8, 'big') + jpeg)
+    response = client.get('/api/inference/frame')
+    assert response.content == jpeg and response.headers['x-frame-id'] == 'run:987'
+    assert client.get('/api/inference/frame?after=run%3A987').status_code == 204
+    assert client.get('/api/inference/frame?after=previous-run%3A987').status_code == 200

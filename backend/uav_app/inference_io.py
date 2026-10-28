@@ -11,6 +11,7 @@ import re
 from functools import lru_cache
 
 from PIL import Image, ImageDraw, ImageFont
+from .source_auth import authenticated_uri, read_credentials, redact
 
 
 def atomic_json(path, value):
@@ -93,6 +94,10 @@ def source_spec(store, settings):
         target = str(path)
         name = asset['name']
     elif kind in ('usb', 'imx415'):
+        if kind == 'usb':
+            from .cameras import is_usb_node
+            if not is_usb_node(uri):
+                raise ValueError('该节点未识别为 USB 摄像头，请扫描实际 USB 设备；CSI/ISP 节点不能作为 USB 实测')
         if not Path(uri).exists() or not os.access(uri, os.R_OK | os.W_OK):
             raise ValueError('无法访问相机节点；请检查节点与 video 组权限')
         owners = camera_owners(uri)
@@ -104,8 +109,9 @@ def source_spec(store, settings):
                 '-framerate', str(settings.camera_fps), '-i', uri], 'binary': binary,
                 'mode_scope': '相机请求模式；实际尺寸以 FFmpeg 采集日志为准'}
     else:
-        args = ['-rtsp_transport', 'tcp', '-timeout', '8000000', '-i', uri]
-        target, name = uri, uri
+        target = authenticated_uri(store.root, uri)
+        args = ['-rtsp_transport', 'tcp', '-timeout', '8000000', '-i', target]
+        name = uri
     probe = str(Path(binary).with_name('ffprobe'))
     if not Path(probe).is_file():
         import shutil
@@ -178,10 +184,12 @@ def read_exact(stream, count):
 
 
 class Capture:
-    def __init__(self, spec, preview_width, log):
+    def __init__(self, spec, preview_width, log, credentials=None):
         self.frames = LatestFrames()
         self.process = None
         self.spec = spec
+        self.log_thread = None
+        self.credentials = credentials
         width = min(preview_width, spec['width'])
         height = max(2, round(spec['height'] * width / spec['width'] / 2) * 2)
         self.size = (width, height)
@@ -194,8 +202,15 @@ class Capture:
         command = [spec['binary'], '-hide_banner', '-nostdin', '-loglevel', 'info', '-threads', '2'] + spec['args']
         command += ['-map', '0:v:0', '-an', '-vf', 'scale=%s:%s' % self.size,
                     '-threads', '2', '-fps_mode', 'passthrough', '-pix_fmt', 'rgb24', '-f', 'rawvideo', 'pipe:1']
-        self.process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=log, stdin=subprocess.DEVNULL,
+        self.process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.DEVNULL,
                                         env=ffmpeg_environment(spec['binary']))
+        def pump_log():
+            while True:
+                line = self.process.stderr.readline(8192)
+                if not line:break
+                log.write(redact(line.decode('utf-8', errors='replace'), credentials).encode('utf-8'))
+        self.log_thread = threading.Thread(target=pump_log, name='uav-capture-log', daemon=True)
+        self.log_thread.start()
         self.thread = threading.Thread(target=self.read, name='uav-capture', daemon=True)
         self.thread.start()
 
@@ -225,6 +240,9 @@ class Capture:
             self.process.stdout.close()
         if self.thread:
             self.thread.join(timeout=2)
+        if self.log_thread:
+            self.log_thread.join(timeout=2)
+            self.process.stderr.close()
 
 
 def annotation(image, detections, labels, classes):
@@ -242,11 +260,9 @@ def annotation(image, detections, labels, classes):
         color = palette[cid % len(palette)]
         draw.rectangle((x1, y1, x2, y2), outline=color, width=max(2, image.width // 600))
         text = '%s %.2f' % ((labels if chinese else classes)[cid], item['confidence'])
-        box = draw.textbbox((0, 0), text, font=font)
-        tw, th = box[2] - box[0], box[3] - box[1]
-        tx = max(0, min(x1, image.width - tw - 6)); ty = max(0, y1 - th - 8)
-        draw.rectangle((tx, ty, tx + tw + 6, ty + th + 6), fill=color)
-        draw.text((tx + 3, ty + 3 - box[1]), text, font=font, fill='#14271f')
+        tile = label_tile(text, font, color)
+        tx = max(0, min(int(x1), image.width - tile.width)); ty = max(0, int(y1) - tile.height - 2)
+        image.paste(tile, (tx, ty))
     output = io.BytesIO()
     image.save(output, 'JPEG', quality=82)
     return output.getvalue()
@@ -255,3 +271,14 @@ def annotation(image, detections, labels, classes):
 @lru_cache(maxsize=8)
 def get_font(path, size):
     return ImageFont.truetype(path, size)
+
+
+@lru_cache(maxsize=512)
+def label_tile(text, font, color):
+    # Chinese glyph rasterization is expensive in dense aerial scenes. The
+    # immutable label tile includes the rounded confidence; boxes still use the
+    # exact current frame's detections. Bounded cache prevents memory growth.
+    box = font.getbbox(text)
+    tile = Image.new('RGB', (box[2] - box[0] + 6, box[3] - box[1] + 6), color)
+    ImageDraw.Draw(tile).text((3 - box[0], 3 - box[1]), text, font=font, fill='#14271f')
+    return tile

@@ -51,7 +51,7 @@ try:
  for attempt in range(50):
   try:
    health=json.load(urllib.request.urlopen('http://127.0.0.1:8088/api/health',timeout=2))
-   if health.get('version')=='0.2.0':break
+   if health.get('version')=='0.3.0':break
   except OSError:pass
   time.sleep(.2)
  else:raise RuntimeError('Upgraded service did not become healthy')

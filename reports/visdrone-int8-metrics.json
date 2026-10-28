@@ -1,0 +1,73 @@
+{
+  "map50_95": 0.16256700633923601,
+  "map50": 0.28208852664953216,
+  "map75": 0.16043123707551618,
+  "per_class": {
+    "pedestrian": {
+      "map50_95": 0.12870743929030942,
+      "ap50": 0.31281431388704356,
+      "gt": 8802
+    },
+    "people": {
+      "map50_95": 0.08590642909128876,
+      "ap50": 0.23563497376260883,
+      "gt": 5113
+    },
+    "bicycle": {
+      "map50_95": 0.03504138028415603,
+      "ap50": 0.07635013757243565,
+      "gt": 1278
+    },
+    "car": {
+      "map50_95": 0.45574995228209575,
+      "ap50": 0.706980968087075,
+      "gt": 13983
+    },
+    "van": {
+      "map50_95": 0.17960772330105593,
+      "ap50": 0.24508195741034822,
+      "gt": 1973
+    },
+    "truck": {
+      "map50_95": 0.1717863372117195,
+      "ap50": 0.2592752542054512,
+      "gt": 748
+    },
+    "tricycle": {
+      "map50_95": 0.08452446036288443,
+      "ap50": 0.14983991151070863,
+      "gt": 1044
+    },
+    "awning-tricycle": {
+      "map50_95": 0.06652924472130232,
+      "ap50": 0.10129805458286369,
+      "gt": 528
+    },
+    "bus": {
+      "map50_95": 0.28498171318346616,
+      "ap50": 0.40176550207935224,
+      "gt": 247
+    },
+    "motor": {
+      "map50_95": 0.13283538366408176,
+      "ap50": 0.33184419339743415,
+      "gt": 4882
+    }
+  },
+  "images": 548,
+  "annotated_targets": 38598,
+  "scored_predictions": 142289,
+  "ignored_predictions": 11705,
+  "classes": 10,
+  "max_detections": 500,
+  "dataset_revision": "3c3b9e9bd44c91121c1fc19fce428f0e6b71bba2",
+  "scope": "Complete VisDrone val split, COCO-style; not official challenge metric",
+  "ignore_protocol": "Exclude ignored_regions/others and predictions/GT covered >50% by any one ignored box; no pixel-union ignore map",
+  "thresholds": "confidence .001, classwise NMS .65, IoU .50:.05:.95, 101 recall points",
+  "others": "Not scored; no reliable trained category evidence",
+  "category_aliases": {
+    "pedestrians": "pedestrian",
+    "awning_tricycle": "awning-tricycle"
+  },
+  "leakage_note": "Calibration uses train only; public checkpoint training provenance is upstream-reported, not independently audited"
+}

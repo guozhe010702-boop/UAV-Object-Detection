@@ -77,7 +77,7 @@ class Settings(BaseModel):
             if parsed.scheme not in ('rtsp', 'rtsps') or not parsed.hostname:
                 raise ValueError('请输入有效 RTSP 地址')
             if parsed.username or parsed.password:
-                raise ValueError('本阶段请勿在地址中保存账号密码，认证流将在推理接入时配置')
+                raise ValueError('请在独立认证栏输入用户名与密码，不要写入 RTSP 地址')
         elif self.source_kind in ('usb', 'imx415'):
             if not re.fullmatch(r'/dev/video[0-9]+', self.source_uri):
                 raise ValueError('摄像头节点应为 /dev/video数字')

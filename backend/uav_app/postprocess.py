@@ -32,7 +32,7 @@ def nms(boxes, scores, threshold, maximum=300):
     return keep
 
 
-def decode(outputs, classes, transform, original_size, confidence=.25, iou=.45):
+def decode(outputs, classes, transform, original_size, confidence=.25, iou=.45, max_detections=300):
     if len(outputs) != 9:
         raise ValueError('YOLO11 必须返回 9 个输出')
     all_boxes, all_scores, all_ids = [], [], []
@@ -64,8 +64,8 @@ def decode(outputs, classes, transform, original_size, confidence=.25, iou=.45):
     keep = []
     for category in np.unique(ids):
         indices = np.where(ids == category)[0]
-        keep.extend(indices[nms(boxes[indices], scores[indices], iou)])
-    keep = sorted(keep, key=lambda k: -scores[k])[:300]
+        keep.extend(indices[nms(boxes[indices], scores[indices], iou, maximum=max_detections)])
+    keep = sorted(keep, key=lambda k: -scores[k])[:max_detections]
     sx, sy, left, top = transform
     boxes[:, (0, 2)] = (boxes[:, (0, 2)] - left) / sx
     boxes[:, (1, 3)] = (boxes[:, (1, 3)] - top) / sy

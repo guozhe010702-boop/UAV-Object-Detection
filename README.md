@@ -1,6 +1,6 @@
 # UAV Object Detection：RK3588 无人机视角目标检测工作台
 
-独立工程目录：`av_dev/UAV Object Detection/`。目标硬件是现有 EVM3588，不是另购设备。**01 模型转换、02 板端 NPU 推理、03 本地网页**现已接通。v0.2.0 已在当前板子验证真实 IMX415 与未画框的 VisDrone 航拍图，不使用合成画面或模拟检测计数。
+独立工程目录：`av_dev/UAV Object Detection/`。目标硬件是现有 EVM3588，不是另购设备。**01 模型转换、02 板端 NPU 推理、03 本地网页**现已接通。v0.3.0 已在当前板子验证真实 IMX415 与未画框的 VisDrone 航拍图，不使用合成画面或模拟检测计数。
 
 独立仓库：[guozhe010702-boop/UAV-Object-Detection](https://github.com/guozhe010702-boop/UAV-Object-Detection)。从这里克隆时，仓库本身就是工程根目录，不需要外层 `av_dev`，也不需要再创建同名子文件夹。仓库上传源码、锁定信息和文档；访问码、数据库、媒体、模型二进制、虚拟环境和生成包留在本地。
 
@@ -9,9 +9,9 @@
 | 部分 | 已实现 | 实际边界 |
 |---|---|---|
 | 模型来源 | 公开 VisDrone YOLO11n，固定下载 SHA-256 | 第三方权重，不是本项目重新训练 |
-| 模型转换 | CPU 上 PT→RK 优化 ONNX→RKNN，640×640、FP16 | 不需要显卡；转换在电脑 Linux 容器，不在板子上进行 |
+| 模型转换 | CPU 上 PT→RK 优化 ONNX→RKNN，640×640、FP16/INT8 | 不需要显卡；转换在电脑 Linux 容器，不在板子上进行 |
 | 类别 | 从 checkpoint 读取 11 类，导出中英文映射 | “其他”在作者模型卡中为 0 AP，不能承诺可靠识别 |
-| 实时检测 | 独立 RKNN 进程、单 context 三核模式、DFL/NMS、同帧中文框 | 当前 FP16 实摄像头短测约 15 FPS，不承诺 25 FPS；没有 INT8 或精度长测 |
+| 实时检测 | 独立 RKNN 进程、单 context 三核模式、DFL/NMS、同帧中文框 | 当前默认 INT8；实摄像头短测约 32 FPS，FP16 保留回退；精度和长测以 reports 中的实际记录为准 |
 | 网页 | React 中文五页面，由同一个 FastAPI 服务提供 | 不依赖 CDN 或云端；原片预览与真实检测画面分开 |
 | 数据管理 | SQLite、媒体上传、记录查询/CSV、截图下载接口、模型清单校验、设置 | 检测期间按秒采样保存真实计数和中文框截图 |
 | 设备资源 | 真实 CPU、内存、存储、温度；可读取时显示三核 NPU 负载 | 电脑本地运行显示电脑资源；无法读取的指标显示 — |
@@ -33,6 +33,9 @@ UAV Object Detection/
 │     ├─ engine.py             检测进程启停、日志、退出清理、状态与过期判断
 │     ├─ worker.py             实际 NPU 推理、最新帧通信、中文框和异步记录
 │     ├─ rknn_backend.py       RKNN 2.3.2 C API 绑定、张量/摘要校验和三核绑定
+│     ├─ preprocess.py         并行 CPU letterbox，最新帧队列与原始序号传递
+│     ├─ source_auth.py        按完整 RTSP 地址绑定私有认证、编码与日志脱敏
+│     ├─ cameras.py            只读发现 USB/IMX 节点，CSI 不冒充 USB
 │     ├─ postprocess.py        RGB letterbox、DFL 解码、分类 NMS 与坐标还原
 │     ├─ inference_io.py       文件/RTSP/V4L2、FFmpeg 采集、完整帧拼接和字体
 │     ├─ npu_metrics.py        独立只读 NPU 负载采样，不让网页以 root 运行
@@ -60,7 +63,9 @@ UAV Object Detection/
 │  ├─ validate_npu.py          板端图片推理基准与数值对照数据
 │  └─ package_release.py       源码包、模型包与离线网页部署包
 ├─ systemd/install.sh          独立低权限服务、开机启动和故障重启
-├─ tests/                     后端接口、鉴权、路径、模型与统计回归
+├─ tests/                     接口、队列、模型、认证、数值与统计回归
+├─ reports/                   小型验收摘要、完整 val 指标；raw/ 仅本地
+├─ datasets/                  公开数据与校准样本，不入 Git
 ├─ runtime.lock.json          RKNN 运行库来源、版本与 SHA-256
 ├─ runtime/lib/               本地/板端私有运行库，不入 Git
 ├─ models.lock.json           权重摘要、导出源码提交和来源
@@ -80,7 +85,7 @@ UAV Object Detection/
 
 部署成功后，在同一局域网的电脑或手机浏览器访问 **`http://板子IP:8088`**。地址以板端实际 IP 为准，不依赖外网。
 
-2026-10-28 已在当前板子部署并回读：**http://192.168.2.221:8088**，服务为 `active/enabled`，已导入一份真实转换模型，NPU 实时检测已接通。仍未重启板子验证开机过程。
+2026-10-28 已在当前板子部署并回读：**http://192.168.2.221:8088**，服务为 `active/enabled`，已导入 INT8 和 FP16 两份模型，默认 INT8；已实测一次普通重启后的网页与检测自动恢复。当前连接状态以实际设备为准，不能把历史验收当作设备始终在线。
 
 **板端 Linux，root 终端，任意目录：**
 
@@ -112,8 +117,8 @@ cat /userdata/uav-object-detection/data/admin-token.txt
 | 航拍图片 | 上传图片，选择模型，点“检测此素材” | 未画框 VisDrone 原图实测，通过；每张只推理一次，完成后保留结果 |
 | 视频文件 | 上传 MP4/MOV/MKV，点“检测此素材” | 真实 IMX415 录制文件验证；按原速读，文件结束显示“检测完成”，不自动循环 |
 | IMX415 | 选择 IMX415、`/dev/video44`、1920×1080、请求 30 FPS、NV12 | 实际双平面 NV12M 已验证；当前实验驱动可能仍输出约 60 FPS，以取帧计数为准 |
-| RTSP | 选择 RTSP，填写不含凭据的有效 RTSP 地址 | 独立本机 TCP 发布流实测；外部带认证的网络相机待扩展，不把密码写进地址 |
-| USB | 选择实际 `/dev/videoN`，按设备支持选择 YUYV/MJPEG/NV12 及尺寸 | 接口已实现，当前没有 USB 相机，未做该硬件实测 |
+| RTSP | 选择 RTSP，填写不含凭据的有效 RTSP 地址 | 独立本机 TCP 发布流实测；匿名和带账号密码的本机 TCP 真流均已实测；认证在独立栏保存，不写进 URL |
+| USB | 选择实际 `/dev/videoN`，按设备支持选择 YUYV/MJPEG/NV12 及尺寸 | 接口已实现，当前实测状态见 reports/acceptance.json；必须枚举出真正 USB 节点才算通过 |
 
 相机由其他程序占用时会报告占用者，不自动杀进程；可先在原程序停止采集，或者改用原程序发布的 RTSP 共享流。采集尺寸和 FPS 是请求值，节点/传感器是否接受以日志和实际取帧为准。
 
@@ -129,7 +134,7 @@ cat /userdata/uav-object-detection/data/admin-token.txt
   → 同帧中文框 JPEG → 浏览器；秒级计数/截图 → SQLite
 ```
 
-一个独立推理进程内，主线程负责 NPU/后处理/绘制；一个采集线程接收完整 RGB 帧，一个记录线程异步保存。图片不需要采集线程。FFmpeg 是独立子进程，SDK 可能自行创建内部线程。这里不是之前 YOLO-World 的九 context 工程。
+一个独立推理进程内，主线程负责 NPU/后处理/绘制；另有采集、日志脱敏、预处理、记录四个线程，共 5 个应用线程。图片无需采集和采集日志线程。预处理和 NPU 并行，但每个 context 仍只由主线程访问。FFmpeg 是独立子进程，SDK 内部线程另计。这里不是之前 YOLO-World 的九 context 工程。
 
 预处理缩放、颜色转换、DFL/NMS 与 JPEG 在 CPU 上，神经网络前向计算在 NPU；本版不是全 RGA 零拷贝流水线。三核掩码不保证三核均匀负载，实际负载必须读取指标。等待队列只有一个槽；不复制旧帧补足目标 FPS，不将旧帧检测框贴到新帧。源结束后会处理最后一个等待帧。
 
@@ -142,7 +147,7 @@ cat /userdata/uav-object-detection/data/admin-token.txt
 - 推理 ms：`inputs_set → run → outputs_get` 实际耗时及输出拷贝，不包含 JPEG；不能用其倒数冒充全链路 FPS。
 - 帧年龄 P95：读出 RGB 帧到发布结果的时间；不等于镜头到屏幕延迟。
 - CPU/内存是板端整机指标，CPU 归一化到 0–100%。NPU 是驱动报告的三个核忙碌率，不是模型“占用四分之一”的保证。
-- 浏览器拉取最新同帧 JPEG，一次只允许一个请求；慢网络跳过预览机会，不积压旧画面。浏览器绘制速度与 NPU 处理 FPS 分开，不声称二者完全相同。
+- 浏览器拉取最新同帧 JPEG，一次只允许一个请求，上限约 30 FPS。帧序号与 JPEG 原子发布，重复请求返回 204，不把重复帧算成 FPS。画面左下角显示“图像更新 FPS”和 JPEG 实收 Mbit/s；这是已载入新图像的速率，不是物理显示器绘制速率，也不是 H.264 网络码率。慢网络跳过预览机会，不积压旧画面。
 - 超过 5 秒未更新会标为过期、隐藏旧计数；断流报错不会继续显示“健康”。
 
 计数是当前画面目标数及采样观察次数累计，没有跨帧追踪去重，不能直接当作车辆通过总数。
@@ -181,7 +186,7 @@ PYTHONPATH=backend .venv/bin/python -m uav_app.cli logs
 
 解释：读取最近的 RKNN 与采集日志；没有重新连接视频源的副作用。
 
-开机自动检测需先保存有效模型/源，再显式勾选“服务启动时自动开始检测”。当前默认仍为关闭；开机即开网页和自动占用相机分别控制。
+开机自动检测需先保存有效模型/源，再显式勾选“服务启动时自动开始检测”。当前这台板子已经启用并实测一次普通重启自动检测。全新安装仍默认关闭，配置好模型与相机后再勾选；开机开网页和自动占用相机分别控制。
 
 ## 在电脑预览网页
 
@@ -332,10 +337,10 @@ python tools/upgrade_board.py
 **Windows PowerShell、工程根目录：**
 
 ```powershell
-python tools/package_release.py
+python tools/package_release.py --precision int8
 ```
 
-解释：生成 `releases/` 中的源码、模型和板端离线包；需要先准备 `.cache/board-wheels/`。这些文件已在当前电脑生成。模型包与应用源码分开，避免大权重混入 Git。
+解释：生成默认 INT8 的源码、模型和板端离线包，并带上 FP16 回退模型；`--precision fp16` 可构建 FP16 单模型包。板端包省略无需运行的 ONNX。需要先准备 `.cache/board-wheels/`。这些文件已在当前电脑生成。模型包与应用源码分开，避免大权重混入 Git。
 
 ```powershell
 python tools/deploy_board.py
@@ -367,10 +372,73 @@ systemctl start uav-object-detection.service
 systemctl disable --now uav-object-detection.service
 ```
 
-解释：同时关闭当前服务并取消其开机启动；数据继续保留。恢复自动启动用安装后的服务启用流程。安装默认启用的是网页，**本轮没有重启板子验证开机流程**。
+解释：同时关闭当前服务并取消其开机启动；数据继续保留。恢复自动启动用安装后的服务启用流程。安装默认启用的是网页，**v0.3.0 已验证一次普通重启后的网页与检测自动恢复**。
+
+## 已完成的公开数据评测与 INT8
+
+数据来自 [VisDrone 官方](https://github.com/VisDrone/VisDrone-Dataset) 及 [Voxel51 原图镜像](https://huggingface.co/datasets/Voxel51/VisDrone2019-DET)，固定 revision `3c3b9e9bd44c91121c1fc19fce428f0e6b71bba2`，只用于本地研究验证，不把原图或模型二进制上传仓库。
+
+- 64 张不同 train 场景图片用于 INT8 校准；与完整 548 张 val 图片没有交集。
+- FP16 与 INT8 都在板端 NPU 对同一完整 val 推理，然后在电脑用 pycocotools 评分。
+- 两个类别别名统一为 `pedestrians → pedestrian`、`awning_tricycle → awning-tricycle`，避免漏掉类别。
+- 统计 10 个有有效标注的类别。“其他”不算入 mAP；忽略区域按报告中的覆盖规则剔除。
+- 当前输入 640；这是 COCO 风格评分，不是 VisDrone 官方 Matlab 挑战榜成绩，不能直接与上游 1280/test 指标比较。
+
+| 模型 | mAP50 | mAP50:95 | NPU P50（仅前向与输出） |
+|---|---:|---:|---:|
+| FP16 | 28.46% | 16.49% | 41.10 ms |
+| INT8 | 28.21% | 16.26% | 17.56 ms |
+
+INT8 的 mAP50 下降约 0.26 个百分点，保留 FP16 回退。原始指标与逐类结果在 `reports/visdrone-*-metrics.json`，精度明显因类别而异，尤其自行车、带篷三轮车仍较弱。离线模型纯推理基准不能冒充完整视频 FPS。
+
+此外，已下载另一份公开 MOT 数据中的 233 张连续实拍原帧，按 25 FPS 播放时序封装成测试 MP4；没有复制、插值或合成内容。实际处理 207 帧，主动丢旧 26 帧；处理策略强调最新画面，不声称该段视频逐帧无丢失，也不以选择的播放时序证明拍摄帧率。
+
+### 如何复现评测
+
+以下在 **Windows PowerShell、工程根目录**执行。
+
+```powershell
+.\.venv\Scripts\python.exe tools/prepare_visdrone.py
+```
+
+解释：下载固定版本的公开原图/标注，核对尺寸和摘要，分别准备 64 张训练集校准图与 548 张验证图；首次需要联网，数据放在 `datasets/`。
+
+```powershell
+docker run --rm --init --network none --cpus 4 --memory 8g --mount "type=bind,source=$($PWD.Path),target=/project" uav-yolo11-converter:2.3.2 --pt models/source/visdrone-yolo11n.pt --output artifacts/visdrone-yolo11n-int8-640-new --int8 --calibration datasets/visdrone/calibration
+```
+
+解释：在之前的隔离 CPU 容器量化 INT8；只挂载本工程、禁用网络、最多 4 CPU / 8 GiB，`--calibration` 指向已做黑色 letterbox 的真实 train 图片。输出必须是新目录。无需显卡，也不是在 RK3588 上转换。
+
+```powershell
+.\.venv\Scripts\python.exe -m pip install -r tools/requirements-eval.txt
+```
+
+解释：只在电脑私有环境准备 pycocotools 评分依赖，开发板运行网页不需要这些评测包。
+
+将 `datasets/visdrone/`、模型包及源码放到板端的独立验证目录后，**板端 Linux、项目根目录**可执行：
+
+```bash
+.venv/bin/python tools/evaluate_board.py --dataset validation/dataset --bundle validation/bundles/int8 --output data/evaluation-int8
+```
+
+解释：逐图实际调用 NPU 并保存预测，不打开摄像头、不模拟结果；开始前先停止网页检测，避免两个推理进程争用 NPU。`--dataset` 指含 index.json/images 的目录，`--bundle` 指 model.rknn/manifest.json，`--output` 保存预测与运行凭据（非登录凭据）。
+
+取回预测后，**Windows PowerShell、工程根目录**执行：
+
+```powershell
+.\.venv\Scripts\python.exe tools/score_visdrone.py --index datasets/visdrone/index.json --predictions reports/raw/visdrone/int8/predictions.json --output reports/visdrone-int8-metrics.json
+```
+
+解释：使用真实公开标注计算 mAP，阈值 .001、NMS .65、最多 500 框、10 类；不按日常网页 .25 阈值删掉评测候选。报告同时保存忽略规则、类别别名和数据版本。
+
+### RTSP 认证和 USB 设备
+
+先停止检测，在设置中选择 RTSP 并填写不含账号密码的地址，再单独保存用户名/密码，保存设置后启动。认证仅绑定完整地址，存在板端私有 data/source-credentials.json（0600），API 不回传密码，日志先脱敏再落盘。读取认证流、错误密码拒绝、停止恢复均已实测。
+
+USB 必须使用真实枚举到的设备；只读接口 `/api/sources/cameras` 返回设备名和支持格式。CSI/ISP 的 video 节点不能当作 USB 摄像头验收。摄像头输入格式和尺寸需按实际设备选择，不能直接套用 IMX415 的 NV12M。
 
 ## 验证与后续优化
 
 后端用独立环境运行自动测试，浏览器测试实际调用后端并上传本次 RKNN；手机页面检查导航与横向溢出。原始报告留在 `.cache/`，结论见 [VALIDATION.md](VALIDATION.md)。
 
-本版 FP16 + Python 路径的实际摄像头处理约 15 FPS；25 FPS 仍未达成。下一步应准备代表性航拍校准集导出 INT8，比较 640/1280 小目标精度，再评估多 context / RGA 优化；不能先写性能目标再当作实测结果。USB 硬件、带认证 RTSP、完整验证集 mAP 和长时间运行均需继续验收。
+本版 INT8 + 并行 CPU 预处理的实摄像头短测约 32 FPS，已超过 25 FPS；最终稳定性以 reports 为准。548 张完整 val 已评测，INT8 mAP50 约 28.21%，mAP50:95 约 16.26%，属于当前模型的实际精度边界，不是“精准识别全部类别”的证明。后续真正提高小目标精度需要训练、输入尺寸或切片策略，不能只靠量化加速。

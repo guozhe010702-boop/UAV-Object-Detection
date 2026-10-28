@@ -153,10 +153,21 @@ class Engine:
             return result
 
     def frame(self):
+        packet = self.frame_packet()
+        return packet[1] if packet else None
+
+    def frame_packet(self):
         with self.lock:
             if not self.folder:
                 return None
             try:
-                return (self.folder / 'frame.jpg').read_bytes()
+                raw = (self.folder / 'frame.bin').read_bytes()
+                if len(raw) < 10 or raw[8:10] != b'\xff\xd8':
+                    return None
+                return self.folder.name + ':' + str(int.from_bytes(raw[:8], 'big')), raw[8:]
             except OSError:
-                return None
+                try:
+                    # Existing frame endpoint tests and pre-0.3 worker compatibility.
+                    return '', (self.folder / 'frame.jpg').read_bytes()
+                except OSError:
+                    return None

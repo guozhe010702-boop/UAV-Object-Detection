@@ -1,0 +1,379 @@
+{
+  "version": "0.3.0",
+  "date": "2026-10-28",
+  "hardware": "EVM3588 / IMX415 con7 / RK3588",
+  "publicDataset": {
+    "completeValImages": 548,
+    "trainCalibrationImages": 64,
+    "disjoint": true,
+    "scope": "COCO-style 10-class scoring, not official Matlab leaderboard"
+  },
+  "fp16": {
+    "map50_95": 0.16488062270408602,
+    "map50": 0.2846395867508342,
+    "map75": 0.16205005933855304,
+    "per_class": {
+      "pedestrian": {
+        "map50_95": 0.13054806065333485,
+        "ap50": 0.3144934518081466,
+        "gt": 8802
+      },
+      "people": {
+        "map50_95": 0.08893028826427676,
+        "ap50": 0.24241254958213931,
+        "gt": 5113
+      },
+      "bicycle": {
+        "map50_95": 0.03550466041169929,
+        "ap50": 0.07681127856768448,
+        "gt": 1278
+      },
+      "car": {
+        "map50_95": 0.4587678568407255,
+        "ap50": 0.7074138273111283,
+        "gt": 13983
+      },
+      "van": {
+        "map50_95": 0.18463385307382335,
+        "ap50": 0.2551124529244648,
+        "gt": 1973
+      },
+      "truck": {
+        "map50_95": 0.17352579356582049,
+        "ap50": 0.25862154539251114,
+        "gt": 748
+      },
+      "tricycle": {
+        "map50_95": 0.08720932833597701,
+        "ap50": 0.15455135371229028,
+        "gt": 1044
+      },
+      "awning-tricycle": {
+        "map50_95": 0.06872506849185872,
+        "ap50": 0.10389978569413892,
+        "gt": 528
+      },
+      "bus": {
+        "map50_95": 0.2838180135625732,
+        "ap50": 0.3932567686797045,
+        "gt": 247
+      },
+      "motor": {
+        "map50_95": 0.13714330384077117,
+        "ap50": 0.3398228538361338,
+        "gt": 4882
+      }
+    },
+    "images": 548,
+    "annotated_targets": 38598,
+    "scored_predictions": 170511,
+    "ignored_predictions": 12798,
+    "classes": 10,
+    "max_detections": 500,
+    "dataset_revision": "3c3b9e9bd44c91121c1fc19fce428f0e6b71bba2",
+    "scope": "Complete VisDrone val split, COCO-style; not official challenge metric",
+    "ignore_protocol": "Exclude ignored_regions/others and predictions/GT covered >50% by any one ignored box; no pixel-union ignore map",
+    "thresholds": "confidence .001, classwise NMS .65, IoU .50:.05:.95, 101 recall points",
+    "others": "Not scored; no reliable trained category evidence",
+    "category_aliases": {
+      "pedestrians": "pedestrian",
+      "awning_tricycle": "awning-tricycle"
+    },
+    "leakage_note": "Calibration uses train only; public checkpoint training provenance is upstream-reported, not independently audited"
+  },
+  "int8": {
+    "map50_95": 0.16256700633923601,
+    "map50": 0.28208852664953216,
+    "map75": 0.16043123707551618,
+    "per_class": {
+      "pedestrian": {
+        "map50_95": 0.12870743929030942,
+        "ap50": 0.31281431388704356,
+        "gt": 8802
+      },
+      "people": {
+        "map50_95": 0.08590642909128876,
+        "ap50": 0.23563497376260883,
+        "gt": 5113
+      },
+      "bicycle": {
+        "map50_95": 0.03504138028415603,
+        "ap50": 0.07635013757243565,
+        "gt": 1278
+      },
+      "car": {
+        "map50_95": 0.45574995228209575,
+        "ap50": 0.706980968087075,
+        "gt": 13983
+      },
+      "van": {
+        "map50_95": 0.17960772330105593,
+        "ap50": 0.24508195741034822,
+        "gt": 1973
+      },
+      "truck": {
+        "map50_95": 0.1717863372117195,
+        "ap50": 0.2592752542054512,
+        "gt": 748
+      },
+      "tricycle": {
+        "map50_95": 0.08452446036288443,
+        "ap50": 0.14983991151070863,
+        "gt": 1044
+      },
+      "awning-tricycle": {
+        "map50_95": 0.06652924472130232,
+        "ap50": 0.10129805458286369,
+        "gt": 528
+      },
+      "bus": {
+        "map50_95": 0.28498171318346616,
+        "ap50": 0.40176550207935224,
+        "gt": 247
+      },
+      "motor": {
+        "map50_95": 0.13283538366408176,
+        "ap50": 0.33184419339743415,
+        "gt": 4882
+      }
+    },
+    "images": 548,
+    "annotated_targets": 38598,
+    "scored_predictions": 142289,
+    "ignored_predictions": 11705,
+    "classes": 10,
+    "max_detections": 500,
+    "dataset_revision": "3c3b9e9bd44c91121c1fc19fce428f0e6b71bba2",
+    "scope": "Complete VisDrone val split, COCO-style; not official challenge metric",
+    "ignore_protocol": "Exclude ignored_regions/others and predictions/GT covered >50% by any one ignored box; no pixel-union ignore map",
+    "thresholds": "confidence .001, classwise NMS .65, IoU .50:.05:.95, 101 recall points",
+    "others": "Not scored; no reliable trained category evidence",
+    "category_aliases": {
+      "pedestrians": "pedestrian",
+      "awning_tricycle": "awning-tricycle"
+    },
+    "leakage_note": "Calibration uses train only; public checkpoint training provenance is upstream-reported, not independently audited"
+  },
+  "rtspAuth": {
+    "wrongPasswordRejected": true,
+    "authenticatedRtsp": true,
+    "credentialsNotInStatusOrLogs": true,
+    "frames": 277
+  },
+  "cycles": {
+    "cycles": [
+      {
+        "cycle": 1,
+        "first_frame_seconds": 0.6301588780000031
+      },
+      {
+        "cycle": 2,
+        "first_frame_seconds": 0.6763417520000132
+      },
+      {
+        "cycle": 3,
+        "first_frame_seconds": 0.7661882609999964
+      },
+      {
+        "cycle": 4,
+        "first_frame_seconds": 0.6511130129999856
+      },
+      {
+        "cycle": 5,
+        "first_frame_seconds": 0.6630721270000208
+      },
+      {
+        "cycle": 6,
+        "first_frame_seconds": 0.7330062160000068
+      },
+      {
+        "cycle": 7,
+        "first_frame_seconds": 0.6160425390000057
+      },
+      {
+        "cycle": 8,
+        "first_frame_seconds": 0.690386105000016
+      },
+      {
+        "cycle": 9,
+        "first_frame_seconds": 0.6229836970000235
+      },
+      {
+        "cycle": 10,
+        "first_frame_seconds": 0.662572186999995
+      }
+    ],
+    "allStoppedCameraReleased": true,
+    "allRestartedUnder5Seconds": true
+  },
+  "boot": {
+    "boot_id_changed": true,
+    "healthy": true,
+    "model": "VisDrone YOLO11n INT8",
+    "automaticInference": true,
+    "elapsed_seconds": 16.563000000000102,
+    "normalRebootOnly": true,
+    "kernelOrFirmwareChanged": false
+  },
+  "aerialVideo": {
+    "frames_received": 233,
+    "frames_processed": 207,
+    "frames_dropped": 26,
+    "original_frames": 233,
+    "source": {
+      "kind": "file",
+      "name": "VisDrone_MOT_real_sequence_25fps.mp4",
+      "width": 2688,
+      "height": 1512,
+      "fps": 25.0,
+      "mode_scope": "ffprobe 报告的视频尺寸与声明帧率"
+    }
+  },
+  "browserSoak": {
+    "seconds": 1800,
+    "elapsedSeconds": 1800.0002986,
+    "samples": 1800,
+    "meanProcessingFps": 32.91421602271073,
+    "meanPreviewUniqueFrameFps": 29.375463406462256,
+    "meanPreviewMbps": 26.66909948641789,
+    "firstHeap": 4446784,
+    "lastHeap": 3798016,
+    "errors": [],
+    "passed": true,
+    "scope": "Headless real Chromium image-load updates from distinct server frame IDs, not measured physical-display paint or camera-to-screen latency"
+  },
+  "boardSoak": {
+    "requested_seconds": 1800,
+    "elapsed_seconds": 1800.0293800729999,
+    "sample_count": 1800,
+    "source": {
+      "kind": "imx415",
+      "name": "/dev/video44",
+      "width": 1920,
+      "height": 1080,
+      "fps": 30,
+      "mode_scope": "相机请求模式；实际尺寸以 FFmpeg 采集日志为准",
+      "actual_mode": {
+        "width": 1920,
+        "height": 1080,
+        "fourcc": "NM12",
+        "planes": 2,
+        "strides": [
+          1920,
+          1920
+        ],
+        "size_images": [
+          2073600,
+          1036800
+        ],
+        "fps": null,
+        "scope": "V4L2 G_FMT; sensor frame interval not inferred from requested FPS"
+      }
+    },
+    "npu": {
+      "backend": "RKNN NPU",
+      "core_mask": 7,
+      "cores": [
+        0,
+        1,
+        2
+      ],
+      "runtime": "2.3.2 (429f97ae6b@2025-04-09T09:09:27)",
+      "driver": "0.8.2",
+      "input_shape": [
+        1,
+        640,
+        640,
+        3
+      ],
+      "contexts": 1
+    },
+    "model": "VisDrone YOLO11n INT8",
+    "model_sha256": "79a3047684f14c55c3b5c875a7701f71b12aaccc3187ed3cd1d277492f35df3a",
+    "processed_frames": 59246,
+    "average_processing_fps": 32.91390721500184,
+    "mean_inference_ms": 20.62844478444005,
+    "mean_cpu_percent": 40.007921302453674,
+    "max_temperature_c": 56.384,
+    "worker_rss_first": 116477952,
+    "worker_rss_last": 119513088,
+    "worker_rss_max": 119513088,
+    "errors": [],
+    "stability_passed": true,
+    "fps_target": 25.0,
+    "performance_passed": true,
+    "scope": "Actual source + NPU + postprocess + annotated JPEG; browser separately measured. No restart/retry of controls.",
+    "csv_rows": 1800,
+    "csv_complete": true,
+    "frame_counts_monotonic": true,
+    "csv_sha256": "26040b2234542267223b2f2a2c2549c57b34c4eaea83e6034895b8d6d737fb98",
+    "resource_summary": {
+      "processing_fps": {
+        "mean": 32.915643029747045,
+        "min": 30.614066918642106,
+        "max": 35.02407415791523
+      },
+      "capture_fps": {
+        "mean": 59.96276710064058,
+        "min": 55.92426922268449,
+        "max": 61.645697593979015
+      },
+      "inference_ms": {
+        "mean": 20.62844478444005,
+        "min": 19.29293099988172,
+        "max": 25.741111999991517
+      },
+      "cpu_percent": {
+        "mean": 40.007921302453674,
+        "min": 33.333333333333336,
+        "max": 58.333333333412284
+      },
+      "memory_percent": {
+        "mean": 16.023222222222223,
+        "min": 14.5,
+        "max": 16.2
+      },
+      "worker_rss_bytes": {
+        "mean": 118644731.44888888,
+        "min": 116477952.0,
+        "max": 119513088.0
+      },
+      "temperature_c": {
+        "mean": 54.945145555555555,
+        "min": 52.692,
+        "max": 56.384
+      },
+      "npu0": {
+        "mean": 52.785555555555554,
+        "min": 50.0,
+        "max": 55.0
+      },
+      "npu1": {
+        "mean": 5.054444444444444,
+        "min": 5.0,
+        "max": 6.0
+      },
+      "npu2": {
+        "mean": 5.992222222222222,
+        "min": 5.0,
+        "max": 7.0
+      }
+    },
+    "worker_rss_growth_bytes": 3035136,
+    "final_5min_rss_min": 119500800,
+    "final_5min_rss_max": 119513088,
+    "memory_note": "RSS rose about 2.9 MiB over 30 min; this is measured growth, not a claim of zero allocations or a proof of absence of leaks."
+  },
+  "usb": {
+    "status": "deferred_by_user",
+    "note": "User currently cannot attach USB camera; not represented by CSI or simulated hardware."
+  },
+  "testsPassed": 39,
+  "currentDeviceConnectivity": "online_verified_after_reconnection",
+  "combinedSoakSameRun": true,
+  "runningCodeFilesReadBack": 15,
+  "allAvailableAcceptancePassed": true,
+  "remainingScope": [
+    "USB hardware acceptance explicitly deferred by user"
+  ]
+}

@@ -1,0 +1,122 @@
+{
+  "requested_seconds": 1800,
+  "elapsed_seconds": 1800.0293800729999,
+  "sample_count": 1800,
+  "source": {
+    "kind": "imx415",
+    "name": "/dev/video44",
+    "width": 1920,
+    "height": 1080,
+    "fps": 30,
+    "mode_scope": "\u76f8\u673a\u8bf7\u6c42\u6a21\u5f0f\uff1b\u5b9e\u9645\u5c3a\u5bf8\u4ee5 FFmpeg \u91c7\u96c6\u65e5\u5fd7\u4e3a\u51c6",
+    "actual_mode": {
+      "width": 1920,
+      "height": 1080,
+      "fourcc": "NM12",
+      "planes": 2,
+      "strides": [
+        1920,
+        1920
+      ],
+      "size_images": [
+        2073600,
+        1036800
+      ],
+      "fps": null,
+      "scope": "V4L2 G_FMT; sensor frame interval not inferred from requested FPS"
+    }
+  },
+  "npu": {
+    "backend": "RKNN NPU",
+    "core_mask": 7,
+    "cores": [
+      0,
+      1,
+      2
+    ],
+    "runtime": "2.3.2 (429f97ae6b@2025-04-09T09:09:27)",
+    "driver": "0.8.2",
+    "input_shape": [
+      1,
+      640,
+      640,
+      3
+    ],
+    "contexts": 1
+  },
+  "model": "VisDrone YOLO11n INT8",
+  "model_sha256": "79a3047684f14c55c3b5c875a7701f71b12aaccc3187ed3cd1d277492f35df3a",
+  "processed_frames": 59246,
+  "average_processing_fps": 32.91390721500184,
+  "mean_inference_ms": 20.62844478444005,
+  "mean_cpu_percent": 40.007921302453674,
+  "max_temperature_c": 56.384,
+  "worker_rss_first": 116477952,
+  "worker_rss_last": 119513088,
+  "worker_rss_max": 119513088,
+  "errors": [],
+  "stability_passed": true,
+  "fps_target": 25.0,
+  "performance_passed": true,
+  "scope": "Actual source + NPU + postprocess + annotated JPEG; browser separately measured. No restart/retry of controls.",
+  "csv_rows": 1800,
+  "csv_complete": true,
+  "frame_counts_monotonic": true,
+  "csv_sha256": "26040b2234542267223b2f2a2c2549c57b34c4eaea83e6034895b8d6d737fb98",
+  "resource_summary": {
+    "processing_fps": {
+      "mean": 32.915643029747045,
+      "min": 30.614066918642106,
+      "max": 35.02407415791523
+    },
+    "capture_fps": {
+      "mean": 59.96276710064058,
+      "min": 55.92426922268449,
+      "max": 61.645697593979015
+    },
+    "inference_ms": {
+      "mean": 20.62844478444005,
+      "min": 19.29293099988172,
+      "max": 25.741111999991517
+    },
+    "cpu_percent": {
+      "mean": 40.007921302453674,
+      "min": 33.333333333333336,
+      "max": 58.333333333412284
+    },
+    "memory_percent": {
+      "mean": 16.023222222222223,
+      "min": 14.5,
+      "max": 16.2
+    },
+    "worker_rss_bytes": {
+      "mean": 118644731.44888888,
+      "min": 116477952.0,
+      "max": 119513088.0
+    },
+    "temperature_c": {
+      "mean": 54.945145555555555,
+      "min": 52.692,
+      "max": 56.384
+    },
+    "npu0": {
+      "mean": 52.785555555555554,
+      "min": 50.0,
+      "max": 55.0
+    },
+    "npu1": {
+      "mean": 5.054444444444444,
+      "min": 5.0,
+      "max": 6.0
+    },
+    "npu2": {
+      "mean": 5.992222222222222,
+      "min": 5.0,
+      "max": 7.0
+    }
+  },
+  "worker_rss_growth_bytes": 3035136,
+  "final_5min_rss_min": 119500800,
+  "final_5min_rss_max": 119513088,
+  "memory_note": "RSS rose about 2.9 MiB over 30 min; this is measured growth, not a claim of zero allocations or a proof of absence of leaks."
+}

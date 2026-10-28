@@ -20,6 +20,7 @@ from .resources import ResourceSampler
 from .schema import ModelManifest, Settings
 from .store import Store, safe_file
 from .engine import Engine
+from .source_auth import read_credentials, save_credentials
 
 PROJECT = Path(__file__).resolve().parents[2]
 
@@ -148,11 +149,14 @@ def create_app(data_dir=None, web_dir=None):
         return engine.stop()
 
     @app.get('/api/inference/frame')
-    def current_frame():
-        jpeg = engine.frame()
-        if jpeg is None:
+    def current_frame(after: str = Query('', max_length=100)):
+        packet = engine.frame_packet()
+        if packet is None:
             return Response(status_code=204)
-        return Response(jpeg, media_type='image/jpeg')
+        identifier, jpeg = packet
+        if identifier and after == identifier:
+            return Response(status_code=204, headers={'X-Frame-Id': identifier})
+        return Response(jpeg, media_type='image/jpeg', headers={'X-Frame-Id': identifier})
 
     @app.get('/api/inference/logs')
     def inference_logs():
@@ -171,6 +175,41 @@ def create_app(data_dir=None, web_dir=None):
     @app.get('/api/assets')
     def assets():
         return store.assets()
+
+    @app.get('/api/source-credentials')
+    def credentials_status():
+        value = read_credentials(store.root, store.settings().source_uri)
+        return {'configured': bool(value), 'username': value['username'] if value else ''}
+
+    @app.get('/api/sources/cameras')
+    def camera_list():
+        from .cameras import list_cameras
+        return {'items': list_cameras()}
+
+    @app.put('/api/source-credentials')
+    async def update_credentials(request: Request):
+        if engine.status()['worker_pid']:
+            raise HTTPException(409, '请先停止检测，再修改视频源认证')
+        raw = await request.body()
+        if len(raw) > 4096:
+            raise HTTPException(413, '认证请求过大')
+        try:
+            value = json.loads(raw)
+            if not isinstance(value, dict) or set(value) != {'source_uri', 'username', 'password'}:
+                raise ValueError()
+            if not all(isinstance(x, str) for x in value.values()):
+                raise ValueError()
+        except (ValueError, TypeError):
+            raise HTTPException(400, '认证请求无效')
+        save_credentials(store.root, **value)
+        return {'configured': True, 'username': value['username']}
+
+    @app.delete('/api/source-credentials')
+    def clear_credentials():
+        if engine.status()['worker_pid']:
+            raise HTTPException(409, '请先停止检测，再清除认证')
+        (store.root / 'source-credentials.json').unlink(missing_ok=True)
+        return {'configured': False, 'username': ''}
 
     @app.post('/api/assets', status_code=201)
     async def upload_asset(file: UploadFile = File(...)):

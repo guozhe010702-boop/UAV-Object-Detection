@@ -101,12 +101,15 @@ def main():
             if result != 0:
                 raise RuntimeError('RKNN ONNX import failed: ' + str(result))
             calibration = None
+            calibration_receipt = None
             if a.int8:
                 images = sorted(p.resolve() for p in a.calibration.rglob('*') if p.suffix.lower() in ('.jpg', '.jpeg', '.png') and p.is_file())
                 if len(images) < 20:
                     raise ValueError('Use at least 20 representative UAV calibration images; no synthetic substitute')
                 calibration = a.output / 'calibration.txt'
                 calibration.write_text('\n'.join(str(p) for p in images) + '\n')
+                calibration_receipt = {'count': len(images), 'image_sha256': [sha256(p) for p in images],
+                                       'preprocessing': 'Externally prepared RGB letterbox; see dataset receipt'}
             result = rknn.build(do_quantization=a.int8, dataset=str(calibration) if calibration else None)
             if result != 0:
                 raise RuntimeError('RKNN build failed: ' + str(result))
@@ -117,7 +120,7 @@ def main():
         finally:
             rknn.release()
         commit = subprocess.check_output(['git', '-C', '/opt/rk-yolo11', 'rev-parse', 'HEAD'], text=True).strip()
-        manifest = {'schema_version': 1, 'name': 'VisDrone YOLO11n', 'architecture': 'yolo11n',
+        manifest = {'schema_version': 1, 'name': 'VisDrone YOLO11n ' + ('INT8' if a.int8 else 'FP16'), 'architecture': 'yolo11n',
                     'platform': 'rk3588', 'input_size': [640, 640], 'classes': classes,
                     'labels_zh': [ZH.get(x, x) for x in classes], 'output_layout': 'rockchip-yolo11-dfl-9',
                     'precision': 'int8' if a.int8 else 'fp16', 'sha256': sha256(rknn_file),
@@ -129,6 +132,7 @@ def main():
                                       'letterbox': True, 'pad_value': 0, 'mean': [0, 0, 0], 'std': [255, 255, 255]},
                     'conversion': {'exporter_commit': commit, 'torch': torch.__version__, 'onnx': onnx.__version__,
                                    'rknn_toolkit2': version('rknn-toolkit2'), 'source_pt_sha256': receipt['source_sha256'],
+                                   'calibration': calibration_receipt,
                                    'onnx_max_absolute_error': max_error, 'seconds': time.monotonic() - started}}
         (a.output / 'manifest.json').write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding='utf-8')
         receipt.update(stage='rknn_exported_not_board_validated', rknn_sha256=manifest['sha256'])
