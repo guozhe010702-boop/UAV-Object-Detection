@@ -218,6 +218,23 @@ def create_app(data_dir=None, web_dir=None):
         finally:
             await file.close()
 
+    @app.delete('/api/assets/{identifier}')
+    def delete_asset(identifier: str):
+        # Serialize deletion with inference start/stop so a file cannot disappear
+        # between source validation and the worker opening it.
+        with engine.lock:
+            active = engine.status()['worker_pid']
+            running = engine.running_settings or {}
+            if active and running.get('source_kind') == 'file' and running.get('source_uri') == identifier:
+                raise HTTPException(409, '该素材正在检测；请先停止检测，再删除')
+            current = store.settings()
+            removed = store.delete_asset(identifier)
+            if removed and current.source_kind == 'file' and current.source_uri == identifier:
+                store.save_settings(current.model_copy(update={'source_uri': ''}))
+        if not removed:
+            raise HTTPException(404, '素材不存在')
+        return {'deleted': True, 'id': identifier, 'name': removed['name']}
+
     @app.get('/api/assets/{identifier}/file')
     def asset_file(identifier: str):
         asset = store.asset(identifier)

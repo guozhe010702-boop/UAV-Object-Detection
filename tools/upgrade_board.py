@@ -1,6 +1,7 @@
 """Upgrade only this service's code/environment; back up code, retain user data."""
 import hashlib
 import json
+import re
 import subprocess
 import zipfile
 from pathlib import Path
@@ -25,6 +26,8 @@ def main():
         for file in (ROOT / '.cache/board-wheels').glob('numpy-*.whl'):
             archive.write(file, 'wheels/' + file.name)
     digest = hashlib.sha256(package.read_bytes()).hexdigest()
+    version_text = (ROOT / 'backend/uav_app/__init__.py').read_text(encoding='utf-8')
+    version = re.search(r"__version__\s*=\s*'([^']+)'", version_text).group(1)
     subprocess.run([str(ADB), 'push', str(package), DEST + '/step02-upgrade.zip'], check=True, stdout=subprocess.DEVNULL)
     code = '''
 import hashlib,json,subprocess,zipfile,time,tarfile,urllib.request
@@ -51,7 +54,7 @@ try:
  for attempt in range(50):
   try:
    health=json.load(urllib.request.urlopen('http://127.0.0.1:8088/api/health',timeout=2))
-   if health.get('version')=='0.3.0':break
+   if health.get('version')==EXPECTED_VERSION:break
   except OSError:pass
   time.sleep(.2)
  else:raise RuntimeError('Upgraded service did not become healthy')
@@ -68,7 +71,7 @@ except BaseException:
  raise
 package.unlink()
 print(json.dumps({'backup':str(backup),'service':subprocess.check_output(['systemctl','is-active','uav-object-detection.service'],text=True).strip()}))
-'''.replace('EXPECTED', repr(digest))
+'''.replace('EXPECTED_VERSION', repr(version)).replace('EXPECTED', repr(digest))
     print(remote(code, timeout=180).encode('ascii', errors='backslashreplace').decode())
 
 

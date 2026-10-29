@@ -76,6 +76,22 @@ class Store:
             row = db.execute('SELECT * FROM assets WHERE id=?', (identifier,)).fetchone()
         return dict(row) if row else None
 
+    def delete_asset(self, identifier):
+        """Remove one uploaded media file and its catalogue row, never a model."""
+        if not re.fullmatch(r'[a-f0-9]{32}', identifier):
+            return None
+        with self.upload_lock:
+            row = self.asset(identifier)
+            if not row:
+                return None
+            path = safe_file(self.root / 'uploads', row['filename'])
+            # Remove the payload first. If the filesystem refuses, keep its DB row
+            # visible so the user can retry rather than silently losing the entry.
+            path.unlink(missing_ok=True)
+            with self.connect() as db:
+                db.execute('DELETE FROM assets WHERE id=?', (identifier,))
+            return row
+
     def model(self, identifier):
         with self.connect() as db:
             row = db.execute('SELECT * FROM models WHERE id=?', (identifier,)).fetchone()
