@@ -2,7 +2,7 @@
 
 独立工程目录：`av_dev/UAV Object Detection/`。目标硬件是现有 EVM3588，不是另购设备。**01 模型转换、02 板端 NPU 推理、03 本地网页**现已接通。v0.3.1 在 v0.3.0 验收基础上增加上传素材的删除管理；此前真实 IMX415 与未画框 VisDrone 航拍图的检测结果见验收记录，不使用合成画面或模拟计数。
 
-独立仓库：[guozhe010702-boop/UAV-Object-Detection](https://github.com/guozhe010702-boop/UAV-Object-Detection)。从这里克隆时，仓库本身就是工程根目录，不需要外层 `av_dev`，也不需要再创建同名子文件夹。仓库上传源码、锁定信息和文档；访问码、数据库、媒体、模型二进制、虚拟环境和生成包留在本地。
+独立仓库：[guozhe010702-boop/UAV-Object-Detection](https://github.com/guozhe010702-boop/UAV-Object-Detection)。从这里克隆时，仓库本身就是工程根目录，不需要外层 `av_dev`，也不需要再创建同名子文件夹。仓库包含 INT8/FP16 RKNN 部署模型、清单和脱敏验收统计；访问码、数据库、摄像头媒体、PT/ONNX、数据集、原始日志、虚拟环境与安装包仍只留在本地。
 
 ## 当前可用范围
 
@@ -16,6 +16,12 @@
 | 数据管理 | SQLite、媒体上传、记录查询/CSV、截图下载接口、模型清单校验、设置 | 检测期间按秒采样保存真实计数和中文框截图 |
 | 设备资源 | 真实 CPU、内存、存储、温度；可读取时显示三核 NPU 负载 | 电脑本地运行显示电脑资源；无法读取的指标显示 — |
 | 开机使用 | 独立虚拟环境、离线 ARM64 wheel、systemd 服务 | 网页默认开机启动；检测需按钮启动，也可显式勾选自动检测 |
+
+### RK3588 模型文件
+
+从 GitHub 克隆后，在仓库根目录运行 `python model-assets/restore_models.py`，即可从模型分片还原 INT8 默认模型和 FP16 回退模型；脚本会校验 SHA-256。对应 `.manifest.json` 包含输入输出和类别信息；电脑端程序仍需配套私有 RKNN Runtime 2.3.2 与板端驱动。模型来源、许可和非商业使用条件见 [第三方来源说明](THIRD_PARTY.md) 和 [模型文件说明](model-assets/README.md)。
+
+本仓库只放部署所需的两个 `.rknn` 文件和清单，不包含相机素材、VisDrone 原图、校准图片、训练权重 `.pt`、中间 ONNX、SQLite、运行日志或访问码。脱敏后的性能与精度统计见 [`reports/`](reports/)。
 
 现有开发板检查结果为 **Ubuntu 20.04.5 / Python 3.8.10 / aarch64**；未升级系统或内核。原 `av_dev` 视频控制与 `rk-yoloworld` 不参与本服务的运行。
 
@@ -85,7 +91,7 @@ UAV Object Detection/
 
 部署成功后，在同一局域网的电脑或手机浏览器访问 **`http://板子IP:8088`**。地址以板端实际 IP 为准，不依赖外网。
 
-2026-10-28 已在当前板子部署并回读：**http://192.168.2.221:8088**，服务为 `active/enabled`，已导入 INT8 和 FP16 两份模型，默认 INT8；已实测一次普通重启后的网页与检测自动恢复。当前连接状态以实际设备为准，不能把历史验收当作设备始终在线。
+2026-10-28 已在当前板子部署并回读，服务为 `active/enabled`，已导入 INT8 和 FP16 两份模型，默认 INT8；已实测一次普通重启后的网页与检测自动恢复。为避免公开局域网信息，这里不固定板端 IP；请在板端运行 `hostname -I` 查询当前地址。
 
 **板端 Linux，root 终端，任意目录：**
 
@@ -197,10 +203,11 @@ PYTHONPATH=backend .venv/bin/python -m uav_app.cli logs
 以下命令在 **Windows PowerShell** 执行：
 
 ```powershell
-Set-Location 'C:\Users\dvsense_docker\Desktop\work\RK3588\av_dev\UAV Object Detection'
+$projectDir = Join-Path $HOME 'UAV Object Detection'
+Set-Location $projectDir
 ```
 
-解释：进入独立工程，目录名有空格，路径必须加引号。
+解释：进入独立工程。`$HOME` 指当前 Windows 用户目录；如果工程放在其它位置，请将 `$projectDir` 改为实际目录。
 
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\run_windows.ps1 -Token

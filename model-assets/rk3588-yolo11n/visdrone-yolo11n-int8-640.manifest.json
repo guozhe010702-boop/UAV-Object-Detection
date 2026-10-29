@@ -1,0 +1,223 @@
+{
+  "schema_version": 1,
+  "name": "VisDrone YOLO11n INT8",
+  "architecture": "yolo11n",
+  "platform": "rk3588",
+  "input_size": [
+    640,
+    640
+  ],
+  "classes": [
+    "pedestrian",
+    "people",
+    "bicycle",
+    "car",
+    "van",
+    "truck",
+    "tricycle",
+    "awning-tricycle",
+    "bus",
+    "motor",
+    "others"
+  ],
+  "labels_zh": [
+    "行人",
+    "人员",
+    "自行车",
+    "小汽车",
+    "面包车",
+    "卡车",
+    "三轮车",
+    "带篷三轮车",
+    "公交车",
+    "摩托车",
+    "其他（待验证）"
+  ],
+  "output_layout": "rockchip-yolo11-dfl-9",
+  "precision": "int8",
+  "sha256": "79a3047684f14c55c3b5c875a7701f71b12aaccc3187ed3cd1d277492f35df3a",
+  "onnx_sha256": "5ec0587ed1354de854072d57cd548b4d0085e0e23b51c317bb5ca2213bc70aa1",
+  "source": "https://huggingface.co/dronefreak/visdrone-yolo11n",
+  "license": "AGPL-3.0; see model card and VisDrone dataset terms",
+  "exported_at": "2026-10-28T04:39:38.692151+00:00",
+  "validated_on_board": false,
+  "outputs": [
+    {
+      "name": "branch_0",
+      "shape": [
+        1,
+        64,
+        80,
+        80
+      ]
+    },
+    {
+      "name": "branch_1",
+      "shape": [
+        1,
+        11,
+        80,
+        80
+      ]
+    },
+    {
+      "name": "branch_2",
+      "shape": [
+        1,
+        1,
+        80,
+        80
+      ]
+    },
+    {
+      "name": "branch_3",
+      "shape": [
+        1,
+        64,
+        40,
+        40
+      ]
+    },
+    {
+      "name": "branch_4",
+      "shape": [
+        1,
+        11,
+        40,
+        40
+      ]
+    },
+    {
+      "name": "branch_5",
+      "shape": [
+        1,
+        1,
+        40,
+        40
+      ]
+    },
+    {
+      "name": "branch_6",
+      "shape": [
+        1,
+        64,
+        20,
+        20
+      ]
+    },
+    {
+      "name": "branch_7",
+      "shape": [
+        1,
+        11,
+        20,
+        20
+      ]
+    },
+    {
+      "name": "branch_8",
+      "shape": [
+        1,
+        1,
+        20,
+        20
+      ]
+    }
+  ],
+  "preprocessing": {
+    "color": "RGB",
+    "layout": "NHWC",
+    "host_dtype": "uint8",
+    "letterbox": true,
+    "pad_value": 0,
+    "mean": [
+      0,
+      0,
+      0
+    ],
+    "std": [
+      255,
+      255,
+      255
+    ]
+  },
+  "conversion": {
+    "exporter_commit": "0692e9297670acf4cc6d0cec773d7a9493cb8a5f",
+    "torch": "2.2.2+cpu",
+    "onnx": "1.16.1",
+    "rknn_toolkit2": "2.3.2",
+    "source_pt_sha256": "97d78d933f46d693f68817fca253c728444aafcec92be42c86ad703ed67d40d5",
+    "calibration": {
+      "count": 64,
+      "image_sha256": [
+        "99f97f0387b2db3787f52f778c9808675a2d61eac503c9e32de38ae7f8569fc3",
+        "c7b80697c45efc4f37fbecec898810127ba22c9cb933a819dda60da04783ce57",
+        "a60e4e04628cfdad955c7a8b997e931b840f96d3e55aa046deef01149da02c2a",
+        "8228462b72abb2facdb5b9e78ee4b8bea1795f4c61da30b69ea1efcc1afd0c5e",
+        "a7dd9c449645d77f42ed8bed5ce08f393b76bf91782f966eb159a767f00901ad",
+        "632ce963e1a3ca1c576704befb59c594630cf8b92468fae1f3d4ec40c97253ee",
+        "04ce68d7a347712947ac849f6bced249fbae39f0de5abc01a3f6ce1307b74458",
+        "86f35b0c7792d72739fb537cd6321cd9c596ecfc29169d1d732ffec0566c5a4a",
+        "8cdfb27a1cf52c1aeaa4f4b1e3b73c8aed3370c23dfa6de8eab5b4c7f103a363",
+        "60214eb4a548d99bedf0c20e90a98476f169bfd8c2e0dc3cee02a51714501e10",
+        "1ac69bb16de961be57192092a5f55945ee90ca1941c07e9bf4514cb60f0af61e",
+        "353f666b20c9bbe49789c709cbb8f4cd185429bf640a602e56228ebf9d92e805",
+        "616fd5ddabb000ccdc37d6491efdfe04e3a1cb6f5c8381046f1078550a2a0eaf",
+        "f262e2ed24ff2079f62345096570e86d297f8ce4f272d169b38de7ce70823398",
+        "58a928eec0c770b8d03f16bfd1e0a17b683d222b36bfaf87fcdca23a88b634e0",
+        "a30d327cb30721e007d170dbb3780edb5fd25924d00ecf2baa22f3a7281243fb",
+        "499b6d6f0f236f3b8cd8af4df59b379b0236eed2a40b95950aca6196f705a36e",
+        "38fdf470e6dfc96d8e62acdb4d09da7b4c2c88c8fd05b3afb42858bd0478a31f",
+        "a5e1735937c49ce450692cbe02d3ed0b12c52f907e59f5164f1da81642c437d5",
+        "d71c567d9ebffd56443de37410bc4bd8143f2090c478afadd82b95255a4e3c38",
+        "7e7dbab3d344dbacdfd2b86eda79ee6be5129c6dbe0c4c3b442816e618475757",
+        "094cd4004af940493a7e89a3e783833485fabe97ab1768f669931c08b24caaa6",
+        "e1541c6eab1ba6aeba6e8a4c24c9e223f11a555f6d74f3f5a9cd46fa2c9d1d5d",
+        "321df1e268e15937c89ebddab78db3b1e10e11b8a1ce3948f32dea809d032cc8",
+        "774d4d69500ce47d44eb02c816418d444eb4ff6eb3a3887e9e2866a238acbd8b",
+        "d62f5036274c778ec363f692ce4a2ed6f1712405b8f09930ecfe736f9afdec20",
+        "df0f7824a9b032b7ea1f27977e136a813314d9765b118362d064a38120698bd8",
+        "4797abddd5310360648adc8d71422b71e1852b7897ff84f452ec6f356082e50e",
+        "26ae59e0b5a710e9b100c3e8be7e21e05613080020f8dcfdda26f06be058286a",
+        "58b21c0a05b01998439e1a81877f8386363b05eaf55a407fbe4f31cb163f8db4",
+        "11d55506313778b3b2a2e13e65489acaff3128bae14f045c4fe4c85fe7fd29d0",
+        "013213c3e8defecf5a51ced9e74dd408ede84f2822929bced97236e4ab619757",
+        "ddf18f0271bd03e59349c15ee337764981d2c8f7bd47a5dd0d5ac762326dc4e6",
+        "3c99576a5b9e0ce153802d0452fbf7461edbe56cccfe2c2ed7a3bd6813982d3d",
+        "e3838135cb3bf0cc55578fa8f55292d79063def8dcf06bf8b37acb70b6addbbf",
+        "c06d07762cea0b5b5d3e2310eb32ff8b94d247983c53aa39ccd3e1f077c19a7c",
+        "77da2c2ec4b0d60ac1dc49d627b619172e7e71be1bec12f5a3aeb2cc39fb7998",
+        "2d675a53b1fb7e2874fcf66012ae3d51dba07b26729eb0f1ee9a79987c723ae1",
+        "d98d4e0dbfba594161c36befdb151c91cd4ef23217b2ed9988183e53c2911f7d",
+        "8a67af283dcf9807cb59bf0d8cfb0fbddd9ac7375024173b37cc49d1b35d331f",
+        "a99c34fca1c56c79a55e762e3bd977429ea3cff34df4a21ac75d23dd4e8f6deb",
+        "79de0fb73294a3c0e147294147d6b743c3b49be6e0e9d35ab55abb45af950f51",
+        "e9d468562309dab992b04456bc49d22426697663e911f730cc539c99796c767f",
+        "ac2d42ffa7fca8306d1529d840988ccd956d13299e9d0a8a1d9fe179d83cfdb1",
+        "ae10b8c08b71b80a1e6defeed037a479a887798ada5f60b7007a36b04e4b97f2",
+        "c749ed2898e21b951f1a071290ea75f5909ebab62d01c5ce62b35f96668116b1",
+        "70412d8d5ff8e4ad6043d64b874fcbb52c871aeeac81600d6a3200d8d7c93f10",
+        "14f920c5e7d077efedb44153e9f96657341721a929d43fdb4f636f7240f3e104",
+        "921a4caf30b3495b0edcf87c278096c27259abe950623e680e7127c404e635f2",
+        "57c0cba63d2a9ef4338c63e2416052ba08675c859036a1761d82713be2dcbc5e",
+        "9a25136e83284a85fb6f2e39bbd0c5cfb40d0be74757312e937e4af93cc32153",
+        "4680110881e65f07c3b949187a62e10ee8037744cf162944218962602db24676",
+        "4fb3534bc33d9da57fd9f0b2a22379b947e20059828f12aed79acb3d5ebfb405",
+        "0fa0b39337922fcddce442c081842f6a7652edd303f92778ae10f9d88feaf060",
+        "82f0bdf526b9ca52c402a556f70be73a18891545220edcf43ff3a0fcff46f12d",
+        "ae0937a5e6f591e88f74286cd0a4c9cb010d3ccac49544df407d11e2064507a6",
+        "09d3075084809bde44baddf5de91c35e247bf15a1e1b9b8b12d351e58b30dde9",
+        "3a5446492377500edcbb654bd479c27c817bb90ade8c33a22cb3e600e3995b2c",
+        "0fef242b864ba042a82b2e414534d5f3a10720bd22b6a79a4600ee030b426848",
+        "f51bc2e390e84af2b90c6883f4ac414aa7819e6f440936ebeef9c45a32dfdf17",
+        "b279b3bd34a35370ba7621db36c898ae9b56bc4b6201b15933ccad2369cfd0b5",
+        "e81422e508be87e14302753df2803641beacdb69c70451937e842fc87f85b48b",
+        "af5b86cee68e69e4640c405de91eb0792f933c0cb065c3bdc9a3d336d46af4b4",
+        "c9c0a9df3a5e7d489f310653f8211db41da7b0f24d7f0e813695bae6e8a210cc"
+      ],
+      "preprocessing": "Externally prepared RGB letterbox; see dataset receipt"
+    },
+    "onnx_max_absolute_error": 8.296966552734375e-05,
+    "seconds": 15.281861772999946
+  }
+}

@@ -2,7 +2,7 @@
 
 | 部分 | 固定来源 | 说明 |
 |---|---|---|
-| YOLO11n VisDrone 权重 | [dronefreak 模型库](https://huggingface.co/dronefreak/visdrone-yolo11n)，revision `c453ee5`、SHA-256 见 `models.lock.json` | 模型卡标注 AGPL-3.0，并单独说明 VisDrone 数据集使用条件；不将它宣传为无条件商业授权 |
+| YOLO11n VisDrone 权重与派生 RKNN | [dronefreak 模型库](https://huggingface.co/dronefreak/visdrone-yolo11n)，revision `c453ee5`、SHA-256 见 `models.lock.json`；部署文件位于 `model-assets/rk3588-yolo11n/` | 模型卡标注 AGPL-3.0，并说明训练数据集 CC BY-NC-SA 3.0 的非商业研究条件适用于模型；按署名、相同方式共享与非商业条件发布。商业用途前需自行取得权利人许可 |
 | 开源训练/参考工程 | [VisDrone-dataset-python-toolkit](https://github.com/dronefreak/VisDrone-dataset-python-toolkit) | GitHub 工程提供模型库入口；本项目未复制整套训练代码 |
 | 导出器 | [airockchip/ultralytics_yolo11](https://github.com/airockchip/ultralytics_yolo11/tree/0692e9297670acf4cc6d0cec773d7a9493cb8a5f) | AGPL-3.0，独立容器固定提交，使用其 RK 优化检测头 |
 | RKNN 转换工具 | [RKNN-Toolkit2](https://github.com/airockchip/rknn-toolkit2)，2.3.2 | 遵守其 SDK 许可证，不分发或修改板端驱动 |

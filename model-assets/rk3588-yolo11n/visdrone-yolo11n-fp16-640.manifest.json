@@ -1,0 +1,153 @@
+{
+  "schema_version": 1,
+  "name": "VisDrone YOLO11n",
+  "architecture": "yolo11n",
+  "platform": "rk3588",
+  "input_size": [
+    640,
+    640
+  ],
+  "classes": [
+    "pedestrian",
+    "people",
+    "bicycle",
+    "car",
+    "van",
+    "truck",
+    "tricycle",
+    "awning-tricycle",
+    "bus",
+    "motor",
+    "others"
+  ],
+  "labels_zh": [
+    "行人",
+    "人员",
+    "自行车",
+    "小汽车",
+    "面包车",
+    "卡车",
+    "三轮车",
+    "带篷三轮车",
+    "公交车",
+    "摩托车",
+    "其他（待验证）"
+  ],
+  "output_layout": "rockchip-yolo11-dfl-9",
+  "precision": "fp16",
+  "sha256": "d6ebc76ac8715310375fe77f598a9a74f6d3ba8980257711551d39299de499f9",
+  "onnx_sha256": "5ec0587ed1354de854072d57cd548b4d0085e0e23b51c317bb5ca2213bc70aa1",
+  "source": "https://huggingface.co/dronefreak/visdrone-yolo11n",
+  "license": "AGPL-3.0; see model card and VisDrone dataset terms",
+  "exported_at": "2026-10-28T03:09:30.178162+00:00",
+  "validated_on_board": false,
+  "outputs": [
+    {
+      "name": "branch_0",
+      "shape": [
+        1,
+        64,
+        80,
+        80
+      ]
+    },
+    {
+      "name": "branch_1",
+      "shape": [
+        1,
+        11,
+        80,
+        80
+      ]
+    },
+    {
+      "name": "branch_2",
+      "shape": [
+        1,
+        1,
+        80,
+        80
+      ]
+    },
+    {
+      "name": "branch_3",
+      "shape": [
+        1,
+        64,
+        40,
+        40
+      ]
+    },
+    {
+      "name": "branch_4",
+      "shape": [
+        1,
+        11,
+        40,
+        40
+      ]
+    },
+    {
+      "name": "branch_5",
+      "shape": [
+        1,
+        1,
+        40,
+        40
+      ]
+    },
+    {
+      "name": "branch_6",
+      "shape": [
+        1,
+        64,
+        20,
+        20
+      ]
+    },
+    {
+      "name": "branch_7",
+      "shape": [
+        1,
+        11,
+        20,
+        20
+      ]
+    },
+    {
+      "name": "branch_8",
+      "shape": [
+        1,
+        1,
+        20,
+        20
+      ]
+    }
+  ],
+  "preprocessing": {
+    "color": "RGB",
+    "layout": "NHWC",
+    "host_dtype": "uint8",
+    "letterbox": true,
+    "pad_value": 0,
+    "mean": [
+      0,
+      0,
+      0
+    ],
+    "std": [
+      255,
+      255,
+      255
+    ]
+  },
+  "conversion": {
+    "exporter_commit": "0692e9297670acf4cc6d0cec773d7a9493cb8a5f",
+    "torch": "2.2.2+cpu",
+    "onnx": "1.16.1",
+    "rknn_toolkit2": "2.3.2",
+    "source_pt_sha256": "97d78d933f46d693f68817fca253c728444aafcec92be42c86ad703ed67d40d5",
+    "onnx_max_absolute_error": 8.296966552734375e-05,
+    "seconds": 3.7689532849999523
+  }
+}

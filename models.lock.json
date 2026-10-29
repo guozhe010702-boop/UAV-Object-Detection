@@ -41,6 +41,6 @@
       "metrics": "reports/visdrone-int8-metrics.json"
     },
     "fp16FallbackSha256": "d6ebc76ac8715310375fe77f598a9a74f6d3ba8980257711551d39299de499f9",
-    "notes": "INT8 accepted after complete val comparison. Others remains unverified. Raw data and weights are not uploaded."
+    "notes": "INT8 accepted after complete val comparison. Others remains unverified. Raw dataset, calibration images, PT and ONNX are not uploaded; deployment RKNN files are published under model-assets/ subject to the source model and VisDrone terms."
   }
 }
